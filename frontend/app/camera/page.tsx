@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Camera, Square, RotateCcw, Download } from "lucide-react"
 
 export default function CameraInterface() {
@@ -78,75 +78,108 @@ export default function CameraInterface() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-4xl mx-auto">
-        <Card>
-          <CardContent className="space-y-4">
-            {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">{error}</div>}
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50">
+      <div className="flex flex-col items-center justify-center min-h-screen p-6">
+        <div className="w-full max-w-2xl space-y-8">
+          {/* Centered Header */}
+          <div className="text-center">
+            <h1 className="text-4xl font-light text-gray-800 tracking-wide">CareLens</h1>
+            <p className="text-gray-600 mt-2 font-light">Professional Camera Interface</p>
+          </div>
 
-            <div className="relative bg-black rounded-lg overflow-hidden aspect-video">
-              {!capturedImage ? (
-                <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
-              ) : (
-                <img
-                  src={capturedImage || "/placeholder.svg"}
-                  alt="Captured photo"
-                  className="w-full h-full object-cover"
-                />
-              )}
-
-              {!isStreaming && !capturedImage && (
-                <div className="absolute inset-0 flex items-center justify-center text-white">
-                  <div className="text-center">
-                    <Camera className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                    <p className="text-lg">Camera not active</p>
-                  </div>
+          {/* Main Camera Card */}
+          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
+            <CardContent className="p-8 space-y-6">
+              {error && (
+                <div className="bg-red-50/80 border border-red-100 text-red-700 px-4 py-3 rounded-lg text-sm font-light">
+                  {error}
                 </div>
               )}
-            </div>
 
-            <canvas ref={canvasRef} className="hidden" />
+              <div className="relative bg-gray-900 rounded-xl overflow-hidden aspect-video shadow-inner">
+                {!capturedImage ? (
+                  <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+                ) : (
+                  <img
+                    src={capturedImage || "/placeholder.svg"}
+                    alt="Captured photo"
+                    className="w-full h-full object-cover"
+                  />
+                )}
 
-            <div className="flex flex-wrap gap-2 justify-center">
-              {!isStreaming && !capturedImage && (
-                <Button onClick={startCamera} className="flex items-center gap-2">
-                  <Camera className="w-4 h-4" />
-                  Start Camera
-                </Button>
-              )}
+                {!isStreaming && !capturedImage && (
+                  <div className="absolute inset-0 flex items-center justify-center text-white">
+                    <div className="text-center">
+                      <Camera className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                      <p className="text-sm font-light opacity-60">Camera Ready</p>
+                    </div>
+                  </div>
+                )}
+              </div>
 
-              {isStreaming && !capturedImage && (
-                <>
-                  <Button onClick={capturePhoto} className="flex items-center gap-2">
-                    <Square className="w-4 h-4" />
-                    Capture Photo
-                  </Button>
-                  <Button onClick={stopCamera} variant="outline" className="flex items-center gap-2 bg-transparent">
-                    <Square className="w-4 h-4" />
-                    Stop Camera
-                  </Button>
-                </>
-              )}
+              <canvas ref={canvasRef} className="hidden" />
 
-              {capturedImage && (
-                <>
-                  <Button onClick={retakePhoto} variant="outline" className="flex items-center gap-2 bg-transparent">
-                    <RotateCcw className="w-4 h-4" />
-                    Retake
+              <div className="flex flex-wrap gap-3 justify-center">
+                {!isStreaming && !capturedImage && (
+                  <Button
+                    onClick={startCamera}
+                    className="bg-gray-800 hover:bg-gray-700 text-white px-6 py-2 rounded-lg font-light transition-all duration-200"
+                  >
+                    <Camera className="w-4 h-4 mr-2" />
+                    Start Camera
                   </Button>
-                  <Button onClick={downloadImage} className="flex items-center gap-2">
-                    <Download className="w-4 h-4" />
-                    Download
-                  </Button>
-                  <Button onClick={startCamera} variant="outline" className="flex items-center gap-2 bg-transparent">
-                    <Camera className="w-4 h-4" />
-                    Take Another
-                  </Button>
-                </>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                )}
+
+                {isStreaming && !capturedImage && (
+                  <>
+                    <Button
+                      onClick={capturePhoto}
+                      className="bg-gray-800 hover:bg-gray-700 text-white px-6 py-2 rounded-lg font-light transition-all duration-200"
+                    >
+                      <Square className="w-4 h-4 mr-2" />
+                      Capture
+                    </Button>
+                    <Button
+                      onClick={stopCamera}
+                      variant="outline"
+                      className="border-gray-300 text-gray-700 hover:bg-gray-50 px-6 py-2 rounded-lg font-light transition-all duration-200 bg-transparent"
+                    >
+                      Stop
+                    </Button>
+                  </>
+                )}
+
+                {capturedImage && (
+                  <>
+                    <Button
+                      onClick={retakePhoto}
+                      variant="outline"
+                      className="border-gray-300 text-gray-700 hover:bg-gray-50 px-6 py-2 rounded-lg font-light transition-all duration-200 bg-transparent"
+                    >
+                      <RotateCcw className="w-4 h-4 mr-2" />
+                      Retake
+                    </Button>
+                    <Button
+                      onClick={downloadImage}
+                      className="bg-gray-800 hover:bg-gray-700 text-white px-6 py-2 rounded-lg font-light transition-all duration-200"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Download
+                    </Button>
+                    <Button
+                      onClick={startCamera}
+                      variant="outline"
+                      className="border-gray-300 text-gray-700 hover:bg-gray-50 px-6 py-2 rounded-lg font-light transition-all duration-200 bg-transparent"
+                    >
+                      <Camera className="w-4 h-4 mr-2" />
+                      New Photo
+                    </Button>
+                  </>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   )

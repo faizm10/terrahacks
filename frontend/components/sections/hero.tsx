@@ -44,11 +44,9 @@ export default function Hero() {
             {/* <div className="relative w-[18px] h-[18px]">
              
             </div> */}
-            
             Start Consultation
-            <ArrowBigRight/>
+            <ArrowBigRight />
           </Link>
-
         </div>
       </div>
     </section>

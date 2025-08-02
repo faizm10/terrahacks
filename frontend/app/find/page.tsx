@@ -7,12 +7,16 @@ import { Button } from "@/components/ui/button";
 import { ProviderCard } from "@/components/provider-card";
 import { SpecialtyFilter } from "@/components/specialty-filter";
 import { SearchInput } from "@/components/search-input";
-import { mockProviders, specialties } from "@/types/providers";
-
+import { ProviderDetailsModal } from "@/components/provider-details-modal"; // New import
+import { mockProviders, specialties, type Provider } from "@/types/provider"; // Import Provider type
 export default function FindProviderPage() {
   const router = useRouter();
   const [selectedSpecialty, setSelectedSpecialty] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false); // New state for modal
+  const [selectedProvider, setSelectedProvider] = useState<Provider | null>(
+    null
+  ); // New state for selected provider
 
   const filteredProviders = useMemo(() => {
     let filtered = mockProviders;
@@ -28,18 +32,22 @@ export default function FindProviderPage() {
       filtered = filtered.filter(
         (provider) =>
           provider.name.toLowerCase().includes(lowerCaseSearchTerm) ||
-          provider.location.toLowerCase().includes(lowerCaseSearchTerm)
+          provider.location.toLowerCase().includes(lowerCaseSearchTerm) ||
+          provider.specialty.toLowerCase().includes(lowerCaseSearchTerm) // Also search by specialty
       );
     }
 
     return filtered;
   }, [selectedSpecialty, searchTerm]);
 
-  const handleConnect = (providerId: string) => {
-    console.log(`Connecting with provider ID: ${providerId}`);
-    // In a real application, this would initiate a video call or chat
-    // For now, it's a placeholder.
-    alert(`Initiating connection with provider ID: ${providerId}`);
+  const handleViewDetails = (provider: Provider) => {
+    setSelectedProvider(provider);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedProvider(null);
   };
 
   return (
@@ -65,7 +73,10 @@ export default function FindProviderPage() {
             specialties={specialties}
             onSelectSpecialty={setSelectedSpecialty}
           />
-          <SearchInput onSearch={setSearchTerm} />
+          <SearchInput
+            onSearch={setSearchTerm}
+            placeholder="Search by name, location, or specialty..."
+          />
         </div>
 
         <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
@@ -74,7 +85,7 @@ export default function FindProviderPage() {
               <ProviderCard
                 key={provider.id}
                 provider={provider}
-                onConnect={handleConnect}
+                onViewDetails={handleViewDetails}
               />
             ))
           ) : (
@@ -84,6 +95,14 @@ export default function FindProviderPage() {
           )}
         </div>
       </div>
+
+      {selectedProvider && (
+        <ProviderDetailsModal
+          provider={selectedProvider}
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+        />
+      )}
     </div>
   );
 }

@@ -1,160 +1,194 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import SimplePeer from 'simple-peer';
 
 interface UseWebRTCReturn {
   isConnected: boolean;
-  isStreaming: boolean;
   localStream: MediaStream | null;
   error: string | null;
-  startStream: () => Promise<void>;
-  stopStream: () => void;
-  connectToPeer: () => Promise<void>;
+  connect: () => Promise<void>;
+  disconnect: () => void;
 }
 
 export const useWebRTC = (): UseWebRTCReturn => {
   const [isConnected, setIsConnected] = useState(false);
-  const [isStreaming, setIsStreaming] = useState(false);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
   
-  const peerRef = useRef<SimplePeer.Instance | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
+  const peerRef = useRef<RTCPeerConnection | null>(null);
+  const dataChannelRef = useRef<RTCDataChannel | null>(null);
+  const audioElementRef = useRef<HTMLAudioElement | null>(null);
 
-  const startStream = useCallback(async () => {
-    try {
-      setError(null);
-      
-      // Get user media (camera)
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: false // Only video for now
-      });
-      
-      setLocalStream(stream);
-      streamRef.current = stream;
-      setIsStreaming(true);
-      
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to access camera';
-      setError(errorMsg);
-      console.error('Error accessing camera:', err);
-    }
-  }, []);
-
-  const connectToPeer = useCallback(async () => {
-    if (!streamRef.current) {
-      setError('No stream available. Start stream first.');
-      return;
-    }
-
-    try {
-      setError(null);
-      
-      // Create peer connection as initiator
-      const peer = new SimplePeer({
-        initiator: true,
-        trickle: false, // Wait for all ICE candidates
-        stream: streamRef.current,
-        config: {
-          iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' }
-          ]
-        }
-      });
-
-      peerRef.current = peer;
-
-      peer.on('error', (err: Error) => {
-        console.error('Peer error:', err);
-        setError(`Peer connection error: ${err.message}`);
-        setIsConnected(false);
-      });
-
-      peer.on('signal', async (data: SimplePeer.SignalData) => {
-        if (data.type === 'offer') {
-          try {
-            console.log('Sending offer to backend...');
-            
-            // Send offer to backend
-            const response = await fetch('http://localhost:8000/api/stream/connect', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                sdp: data.sdp,
-                type: data.type,
-                session_id: 'default'
-              }),
-            });
-
-            if (!response.ok) {
-              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            const answer = await response.json();
-            console.log('Received answer from backend:', answer);
-            
-            // Apply the answer
-            peer.signal({
-              type: 'answer',
-              sdp: answer.sdp
-            });
-            
-          } catch (err) {
-            const errorMsg = err instanceof Error ? err.message : 'Failed to connect to backend';
-            setError(`Backend connection error: ${errorMsg}`);
-            console.error('Backend connection error:', err);
-          }
-        }
-      });
-
-      peer.on('connect', () => {
-        console.log('Peer connected!');
-        setIsConnected(true);
-        setError(null);
-      });
-
-      peer.on('close', () => {
-        console.log('Peer connection closed');
-        setIsConnected(false);
-      });
-
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to create peer connection';
-      setError(errorMsg);
-      console.error('Peer creation error:', err);
-    }
-  }, []);
-
-  const stopStream = useCallback(() => {
-    // Stop peer connection
+  const cleanup = useCallback(() => {
+    console.log('🧹 Cleaning up WebRTC resources...');
+    
+    // Close peer connection
     if (peerRef.current) {
-      peerRef.current.destroy();
+      peerRef.current.close();
       peerRef.current = null;
     }
     
+    // Close data channel
+    if (dataChannelRef.current) {
+      dataChannelRef.current.close();
+      dataChannelRef.current = null;
+    }
+    
+    // Remove audio element
+    if (audioElementRef.current) {
+      document.body.removeChild(audioElementRef.current);
+      audioElementRef.current = null;
+    }
+    
     // Stop media stream
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
+    if (localStream) {
+      localStream.getTracks().forEach(track => track.stop());
     }
     
     setLocalStream(null);
-    setIsStreaming(false);
     setIsConnected(false);
     setError(null);
-  }, []);
+  }, [localStream]);
+
+  const connect = useCallback(async () => {
+    try {
+      setError(null);
+      console.log('🚀 Starting WebRTC connection with OpenAI...');
+      
+      // Step 1: Get user media
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true
+      });
+      setLocalStream(stream);
+      console.log('✅ Media stream started');
+      
+      // Step 2: Get ephemeral session from backend
+      console.log('🔑 Getting ephemeral session...');
+      const sessionResponse = await fetch('http://localhost:8000/api/stream/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: 'default' }),
+      });
+
+      if (!sessionResponse.ok) {
+        throw new Error(`Session creation failed: ${sessionResponse.status}`);
+      }
+
+      const sessionData = await sessionResponse.json();
+      console.log('✅ Ephemeral session created:', sessionData.openai_session_id);
+
+      // Step 3: Create RTCPeerConnection
+      const pc = new RTCPeerConnection({
+        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+      });
+      peerRef.current = pc;
+
+      // Step 4: Set up audio element for AI responses
+      if (!audioElementRef.current) {
+        audioElementRef.current = document.createElement('audio');
+        audioElementRef.current.autoplay = true;
+        document.body.appendChild(audioElementRef.current);
+      }
+
+      pc.ontrack = (event) => {
+        console.log('🔊 Received audio track from OpenAI');
+        if (audioElementRef.current) {
+          audioElementRef.current.srcObject = event.streams[0];
+        }
+      };
+
+      // Step 5: Add local audio track
+      const audioTrack = stream.getAudioTracks()[0];
+      if (audioTrack) {
+        pc.addTrack(audioTrack, stream);
+        console.log('🎤 Added local audio track to peer connection');
+      }
+
+      // Step 6: Set up data channel for transcript events
+      const dataChannel = pc.createDataChannel('oai-events');
+      dataChannelRef.current = dataChannel;
+
+      dataChannel.onopen = () => console.log('📡 Data channel opened');
+
+      dataChannel.onmessage = async (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          console.log('📝 Received OpenAI event:', data.type);
+          
+          // Forward transcript events to backend
+          if (data.type === 'conversation.item.input_audio_transcription.completed' ||
+              data.type === 'response.audio_transcript.done') {
+            
+            await fetch('http://localhost:8000/api/stream/transcript', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ...data, session_id: 'default' }),
+            });
+          }
+        } catch (error) {
+          console.error('❌ Error processing data channel message:', error);
+        }
+      };
+
+      dataChannel.onerror = (error) => {
+        console.error('❌ Data channel error:', error);
+      };
+
+      // Step 7: Handle connection state changes
+      pc.onconnectionstatechange = () => {
+        console.log('🔄 Connection state:', pc.connectionState);
+        if (pc.connectionState === 'connected') {
+          setIsConnected(true);
+          console.log('🎉 WebRTC connection established with OpenAI!');
+        } else if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+          setIsConnected(false);
+          if (pc.connectionState === 'failed') {
+            setError('WebRTC connection failed');
+          }
+        }
+      };
+
+      // Step 8: Create offer and exchange SDP
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      console.log('📋 Created WebRTC offer');
+
+      console.log('📡 Sending offer to OpenAI...');
+      const webrtcResponse = await fetch('http://localhost:8000/api/stream/webrtc', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sdp: offer.sdp, session_id: 'default' }),
+      });
+
+      if (!webrtcResponse.ok) {
+        throw new Error(`WebRTC setup failed: ${webrtcResponse.status}`);
+      }
+
+      const answerSdp = await webrtcResponse.text();
+      await pc.setRemoteDescription({ type: 'answer', sdp: answerSdp });
+      
+      console.log('✅ WebRTC connection setup complete');
+
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to connect to OpenAI';
+      setError(`Connection error: ${errorMsg}`);
+      console.error('❌ Connection error:', err);
+      cleanup();
+    }
+  }, [cleanup]);
+
+  const disconnect = useCallback(() => {
+    console.log('🛑 Disconnecting WebRTC...');
+    cleanup();
+    console.log('✅ WebRTC disconnected');
+  }, [cleanup]);
 
   return {
     isConnected,
-    isStreaming,
     localStream,
     error,
-    startStream,
-    stopStream,
-    connectToPeer,
+    connect,
+    disconnect,
   };
 };

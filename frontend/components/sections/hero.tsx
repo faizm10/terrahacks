@@ -31,7 +31,7 @@ export default function Hero() {
 
       <div className="absolute inset-0 z-0 flex items-center justify-center">
        <img
-         src="/login-page-img.gif"
+         src="/ezgif-terra.gif"
          alt="doctor animation"
          className="object-contain w-[550px] h-auto"
         />

@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import { ArrowLeftIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/lib/supabase/client";
+import { Toaster } from "@/components/ui/sonner"
 
 export type TimelineItem = {
   id: string;
@@ -51,13 +53,29 @@ export default function MedicalHistoryPage() {
     },
   ]);
 
-  const handleFileUpload = (file: File) => {
+  const handleFileUpload = async (file: File) => {
+    const path = `records/${Date.now()}_${file.name}`;
+    const {data,error:uploadError} = await supabase.storage.from('records').upload(path, file, { cacheControl: "3600", upsert: false });
+
+    if (uploadError) {
+      console.error('Upload Error:', uploadError);
+      return;
+    }
+
+    const { publicUrl, error: urlError } = supabase.storage.from("records").getPublicUrl(data.path);
+
+    if (urlError) {
+      console.error("Get public URL error:", urlError);
+      return;
+    }
+
+
     const newEvent: TimelineItem = {
       id: Date.now().toString(),
       date: new Date().toISOString().split("T")[0], // Current date
       title: `Uploaded: ${file.name}`,
       description: `A new file, "${file.name}", was uploaded to your medical history.`,
-      fileUrl: URL.createObjectURL(file), // Create a temporary URL for display
+      fileUrl: publicUrl,
       fileName: file.name,
     };
     setTimelineEvents((prevEvents) =>

@@ -1,8 +1,14 @@
-"use client"
+"use client";
 
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   PhoneIcon,
   MailIcon,
@@ -12,44 +18,48 @@ import {
   GraduationCapIcon,
   BriefcaseIcon,
   LanguagesIcon,
-} from "lucide-react"
-import type { Provider } from "@/types/provider"
+} from "lucide-react";
+import type { Provider } from "@/types/provider";
 
 type ProviderDetailsModalProps = {
-  provider: Provider | null
-  isOpen: boolean
-  onClose: () => void
-}
+  provider: Provider | null;
+  isOpen: boolean;
+  onClose: () => void;
+};
 
-export function ProviderDetailsModal({ provider, isOpen, onClose }: ProviderDetailsModalProps) {
-  if (!provider) return null
+export function ProviderDetailsModal({
+  provider,
+  isOpen,
+  onClose,
+}: ProviderDetailsModalProps) {
+  if (!provider) return null;
 
   const handleVideoCall = () => {
     if (provider.videoCallLink) {
-      window.open(provider.videoCallLink, "_blank")
+      window.open(provider.videoCallLink, "_blank");
     } else {
-      alert("Video call link not available for this provider.")
+      alert("Video call link not available for this provider.");
     }
-    onClose()
-  }
+    onClose();
+  };
 
   const handlePhoneCall = () => {
     if (provider.phone) {
-      window.open(`tel:${provider.phone}`)
+      window.open(`tel:${provider.phone}`);
     } else {
-      alert("Phone number not available for this provider.")
+      alert("Phone number not available for this provider.");
     }
-    onClose()
-  }
+    onClose();
+  };
 
   const handleEmail = () => {
     if (provider.email) {
-      window.open(`mailto:${provider.email}`)
+      window.open(`mailto:${provider.email}`);
     } else {
-      alert("Email address not available for this provider.")
+      alert("Email address not available for this provider.");
     }
-    onClose()
-  }
+    onClose();
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -57,7 +67,10 @@ export function ProviderDetailsModal({ provider, isOpen, onClose }: ProviderDeta
         <DialogHeader className="text-center sm:text-left">
           <div className="flex flex-col items-center sm:flex-row sm:items-start sm:gap-6 mb-4">
             <Avatar className="w-24 h-24 mb-4 sm:mb-0">
-              <AvatarImage src={provider.imageUrl || "/placeholder.svg"} alt={`${provider.name}'s avatar`} />
+              <AvatarImage
+                src={provider.imageUrl || "/placeholder.svg"}
+                alt={`${provider.name}'s avatar`}
+              />
               <AvatarFallback>
                 {provider.name
                   .split(" ")
@@ -66,13 +79,16 @@ export function ProviderDetailsModal({ provider, isOpen, onClose }: ProviderDeta
               </AvatarFallback>
             </Avatar>
             <div className="text-center sm:text-left">
-              <DialogTitle className="text-3xl font-bold text-[var(--color-text-primary)]">{provider.name}</DialogTitle>
+              <DialogTitle className="text-3xl font-bold text-[var(--color-text-primary)]">
+                {provider.name}
+              </DialogTitle>
               <DialogDescription className="text-lg text-[var(--color-accent)] font-medium mb-2">
                 {provider.specialty}
               </DialogDescription>
               <div className="flex items-center justify-center sm:justify-start text-sm text-[var(--color-text-secondary)] mb-1">
                 <StarIcon className="w-4 h-4 text-[var(--color-stars)] fill-[var(--color-stars)] mr-1" />
-                {provider.rating.toFixed(1)} ({Math.floor(provider.rating * 20)} reviews)
+                {provider.rating.toFixed(1)} ({Math.floor(provider.rating * 20)}{" "}
+                reviews)
               </div>
               <div className="flex items-center justify-center sm:justify-start text-sm text-[var(--color-text-secondary)]">
                 <MapPinIcon className="w-4 h-4 mr-1" />
@@ -83,13 +99,16 @@ export function ProviderDetailsModal({ provider, isOpen, onClose }: ProviderDeta
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
-          <p className="text-[var(--color-text-primary)] text-base leading-relaxed">{provider.bio}</p>
+          <p className="text-[var(--color-text-primary)] text-base leading-relaxed">
+            {provider.bio}
+          </p>
 
           {provider.experience && (
             <div className="flex items-start gap-2 text-[var(--color-text-secondary)]">
               <BriefcaseIcon className="h-5 w-5 flex-shrink-0 mt-1" />
               <p>
-                <span className="font-semibold">Experience:</span> {provider.experience}
+                <span className="font-semibold">Experience:</span>{" "}
+                {provider.experience}
               </p>
             </div>
           )}
@@ -98,7 +117,8 @@ export function ProviderDetailsModal({ provider, isOpen, onClose }: ProviderDeta
             <div className="flex items-start gap-2 text-[var(--color-text-secondary)]">
               <GraduationCapIcon className="h-5 w-5 flex-shrink-0 mt-1" />
               <p>
-                <span className="font-semibold">Education:</span> {provider.education}
+                <span className="font-semibold">Education:</span>{" "}
+                {provider.education}
               </p>
             </div>
           )}
@@ -107,7 +127,8 @@ export function ProviderDetailsModal({ provider, isOpen, onClose }: ProviderDeta
             <div className="flex items-start gap-2 text-[var(--color-text-secondary)]">
               <LanguagesIcon className="h-5 w-5 flex-shrink-0 mt-1" />
               <p>
-                <span className="font-semibold">Languages:</span> {provider.languages.join(", ")}
+                <span className="font-semibold">Languages:</span>{" "}
+                {provider.languages.join(", ")}
               </p>
             </div>
           )}
@@ -143,5 +164,5 @@ export function ProviderDetailsModal({ provider, isOpen, onClose }: ProviderDeta
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

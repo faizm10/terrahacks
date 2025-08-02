@@ -79,6 +79,7 @@ export default function MedicalHistoryPage() {
         return
       }
 
+      
       const newEvent: TimelineItem = {
         id: Date.now().toString(),
         date: new Date().toISOString().split("T")[0],

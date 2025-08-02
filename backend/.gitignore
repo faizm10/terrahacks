@@ -23,19 +23,5 @@ ENV/
 *.swp
 *.swo
 
-# OS
-.DS_Store
-Thumbs.db
-
 # Logs
 *.log
-
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-
-# Build
-dist/
-build/
-*.egg-info/

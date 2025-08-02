@@ -1,5 +1,4 @@
-from fastapi import APIRouter, HTTPException, Body
-from typing import Dict, Any
+from fastapi import APIRouter, HTTPException
 import openai
 import os
 from dotenv import load_dotenv

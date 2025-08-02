@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api.routes import openai
+from api.routes import openai, stream
 import uvicorn
 
 app = FastAPI(title="TerraHacks Backend API")
@@ -17,6 +17,7 @@ app.add_middleware(
 )
 
 app.include_router(openai.router, prefix="/api/openai", tags=["OpenAI"])
+app.include_router(stream.router, prefix="/api/stream", tags=["Streaming"])
 
 @app.get("/")
 def read_root():

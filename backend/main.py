@@ -1,14 +1,34 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from api.routes import openai
 import uvicorn
 
 app = FastAPI(title="TerraHacks Backend API")
+
+# Add CORS middleware with more permissive settings
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],  # Frontend URLs
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
+    allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=86400,  # Cache preflight requests for 24 hours
+)
 
 app.include_router(openai.router, prefix="/api/openai", tags=["OpenAI"])
 
 @app.get("/")
 def read_root():
     return {"message": "Welcome to TerraHacks Backend API"}
+
+@app.get("/test")
+def test_endpoint():
+    return {
+        "status": "success",
+        "message": "Backend is working correctly!",
+        "timestamp": "2024-01-01T00:00:00Z"
+    }
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

@@ -59,27 +59,6 @@ async def websocket_transcript_stream(websocket: WebSocket, session_id: str):
         conversation_store.unsubscribe(session_id, queue)
 
 
-@router.get("/export/{session_id}")
-async def export_conversation(session_id: str, format: str = "json"):
-    """Export conversation in specified format"""
-    
-    if format not in ["json", "text"]:
-        raise HTTPException(status_code=400, detail="Invalid format. Use 'json' or 'text'")
-    
-    export_data = conversation_store.export_conversation(session_id, format)
-    
-    if not export_data:
-        raise HTTPException(status_code=404, detail="Conversation not found")
-    
-    if format == "json":
-        return JSONResponse(content=json.loads(export_data))
-    else:
-        # Return plain text
-        return JSONResponse(
-            content={"transcript": export_data},
-            media_type="text/plain"
-        )
-
 
 @router.get("/session/{session_id}")
 async def get_session_info(session_id: str):

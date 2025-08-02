@@ -2,12 +2,10 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel
 import logging
-import json
 import sys
 import os
 import aiohttp
-from datetime import datetime, timedelta
-import secrets
+from datetime import datetime
 
 # Add parent directory to path to import services
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -28,7 +26,7 @@ class SDPOffer(BaseModel):
     session_id: str = "default"
 
 @router.post("/session")
-async def create_session(request: SessionRequest = None):
+async def create_session(request: SessionRequest):
     """Create an ephemeral key session for OpenAI Realtime API"""
     try:
         session_id = request.session_id if request else "default"

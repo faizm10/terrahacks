@@ -100,63 +100,7 @@ class ConversationStore:
         """Get a complete conversation by session ID"""
         return self.conversations.get(session_id)
         
-    def export_conversation(self, session_id: str, format: str = "json") -> Optional[str]:
-        """Export conversation in specified format"""
-        conversation = self.get_conversation(session_id)
-        if not conversation:
-            return None
             
-        if format == "json":
-            return json.dumps(conversation, indent=2)
-            
-        elif format == "text":
-            # Plain text format
-            lines = [
-                f"Conversation Session: {session_id}",
-                f"Start Time: {conversation['start_time']}",
-                f"End Time: {conversation.get('end_time', 'Ongoing')}",
-                f"Duration: {conversation.get('duration_seconds', 'N/A')} seconds",
-                "",
-                "Transcript:",
-                "-" * 50
-            ]
-            
-            for transcript in conversation["transcripts"]:
-                timestamp = datetime.fromisoformat(transcript["timestamp"]).strftime("%H:%M:%S")
-                role = transcript["role"].upper()
-                content = transcript["content"]
-                lines.append(f"[{timestamp}] {role}: {content}")
-                
-            return "\n".join(lines)
-            
-        else:
-            logger.warning(f"Unknown export format: {format}")
-            return None
-            
-    def print_conversation_summary(self, session_id: str) -> None:
-        """Print conversation summary to console"""
-        conversation = self.get_conversation(session_id)
-        if not conversation:
-            logger.warning(f"No conversation found for session {session_id}")
-            return
-            
-        print("\n" + "="*60)
-        print(f"CONVERSATION SUMMARY - Session: {session_id}")
-        print("="*60)
-        print(f"Start Time: {conversation['start_time']}")
-        print(f"End Time: {conversation.get('end_time', 'Ongoing')}")
-        print(f"Duration: {conversation.get('duration_seconds', 'N/A')} seconds")
-        print(f"Total Exchanges: {len(conversation['transcripts'])}")
-        print("\nFull Transcript:")
-        print("-"*60)
-        
-        for transcript in conversation["transcripts"]:
-            timestamp = datetime.fromisoformat(transcript["timestamp"]).strftime("%H:%M:%S")
-            role = transcript["role"].upper()
-            content = transcript["content"]
-            print(f"[{timestamp}] {role}: {content}")
-            
-        print("="*60 + "\n")
 
 
 # Global instance

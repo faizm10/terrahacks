@@ -22,7 +22,6 @@ export default function TestStreamPage() {
     isConnected: isTranscriptConnected,
     connect: connectTranscript,
     disconnect: disconnectTranscript,
-    exportConversation,
   } = useTranscript();
 
   // Set video source when stream becomes available
@@ -44,23 +43,6 @@ export default function TestStreamPage() {
     }
   }, [isConnected, isTranscriptConnected, connectTranscript]);
   
-  const handleExportConversation = async () => {
-    try {
-      const transcript = await exportConversation();
-      // Create a blob and download
-      const blob = new Blob([transcript], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `conversation-${new Date().toISOString()}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Failed to export conversation:', error);
-    }
-  };
   
   const handleStopStream = () => {
     disconnectTranscript();
@@ -122,14 +104,6 @@ export default function TestStreamPage() {
                   Stop Stream
                 </button>
                 
-                {transcripts.length > 0 && (
-                  <button
-                    onClick={handleExportConversation}
-                    className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600"
-                  >
-                    Export Conversation
-                  </button>
-                )}
               </div>
             </div>
 

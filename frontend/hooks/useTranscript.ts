@@ -15,7 +15,6 @@ interface UseTranscriptReturn {
   isConnected: boolean;
   connect: (sessionId: string) => void;
   disconnect: () => void;
-  exportConversation: () => Promise<string>;
 }
 
 export const useTranscript = (): UseTranscriptReturn => {
@@ -72,27 +71,6 @@ export const useTranscript = (): UseTranscriptReturn => {
     }
   }, []);
 
-  const exportConversation = useCallback(async (): Promise<string> => {
-    if (!sessionIdRef.current) {
-      throw new Error('No session ID available');
-    }
-
-    try {
-      const response = await fetch(
-        `http://localhost:8000/api/realtime/export/${sessionIdRef.current}?format=text`
-      );
-
-      if (!response.ok) {
-        throw new Error(`Export failed: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      return data.transcript;
-    } catch (error) {
-      console.error('Error exporting conversation:', error);
-      throw error;
-    }
-  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -108,6 +86,5 @@ export const useTranscript = (): UseTranscriptReturn => {
     isConnected,
     connect,
     disconnect,
-    exportConversation,
   };
 };

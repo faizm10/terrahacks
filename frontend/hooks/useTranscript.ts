@@ -71,7 +71,6 @@ export const useTranscript = (): UseTranscriptReturn => {
     }
   }, []);
 
-
   // Cleanup on unmount
   useEffect(() => {
     return () => {

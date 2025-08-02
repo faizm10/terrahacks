@@ -9,12 +9,10 @@ export default function TestStreamPage() {
   const transcriptEndRef = useRef<HTMLDivElement>(null);
   const {
     isConnected,
-    isStreaming,
     localStream,
     error,
-    startStream,
-    stopStream,
-    connectToPeer: connectToOpenAI,
+    connect,
+    disconnect,
   } = useWebRTC();
   
   const {
@@ -44,9 +42,9 @@ export default function TestStreamPage() {
   }, [isConnected, isTranscriptConnected, connectTranscript]);
   
   
-  const handleStopStream = () => {
+  const handleDisconnect = () => {
     disconnectTranscript();
-    stopStream();
+    disconnect();
   };
 
   return (
@@ -81,27 +79,19 @@ export default function TestStreamPage() {
               <h2 className="text-xl font-semibold mb-4">Controls</h2>
               <div className="flex flex-wrap gap-4">
                 <button
-                  onClick={startStream}
-                  disabled={isStreaming}
-                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                >
-                  {isStreaming ? 'Camera & Mic Active' : 'Start Camera & Mic'}
-                </button>
-                
-                <button
-                  onClick={connectToOpenAI}
-                  disabled={!isStreaming || isConnected}
+                  onClick={connect}
+                  disabled={isConnected}
                   className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
                   {isConnected ? 'Connected to OpenAI' : 'Connect to OpenAI'}
                 </button>
                 
                 <button
-                  onClick={handleStopStream}
-                  disabled={!isStreaming}
+                  onClick={handleDisconnect}
+                  disabled={!isConnected}
                   className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
-                  Stop Stream
+                  Disconnect
                 </button>
                 
               </div>
@@ -112,11 +102,11 @@ export default function TestStreamPage() {
               <h2 className="text-xl font-semibold mb-4">Status</h2>
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium">Camera & Mic:</span>
+                  <span className="font-medium">Media Stream:</span>
                   <span className={`px-2 py-1 rounded text-sm ${
-                    isStreaming ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                    localStream ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                   }`}>
-                    {isStreaming ? 'Active' : 'Inactive'}
+                    {localStream ? 'Active' : 'Inactive'}
                   </span>
                 </div>
                 
@@ -179,11 +169,11 @@ export default function TestStreamPage() {
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
                 <h4 className="text-blue-800 font-semibold mb-1">How it works:</h4>
                 <ol className="text-blue-700 space-y-0.5 text-xs">
-                  <li>1. Allow camera & microphone access</li>
-                  <li>2. Click "Connect to AI" to start conversation</li>
+                  <li>1. Click "Connect to OpenAI" to start</li>
+                  <li>2. Allow camera & microphone access</li>
                   <li>3. Speak naturally - the AI will respond</li>
                   <li>4. Transcripts appear here in real-time</li>
-                  <li>5. Export conversation when done</li>
+                  <li>5. Click "Disconnect" when done</li>
                 </ol>
               </div>
             </div>

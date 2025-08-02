@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { useWebRTC } from '../hooks/useWebRTC';
+import { useWebRTC } from '../../hooks/useWebRTC';
 
 export default function TestStreamPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -112,8 +112,8 @@ export default function TestStreamPage() {
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <h3 className="text-blue-800 font-semibold mb-2">Instructions</h3>
           <ol className="text-blue-700 space-y-1">
-            <li>1. Click "Start Camera" to access your webcam</li>
-            <li>2. Click "Connect to Backend" to establish WebRTC connection</li>
+            <li>1. Click &quot;Start Camera&quot; to access your webcam</li>
+            <li>2. Click &quot;Connect to Backend&quot; to establish WebRTC connection</li>
             <li>3. Your video stream will be sent to the backend in real-time</li>
             <li>4. Check the backend logs to see received video frames</li>
           </ol>

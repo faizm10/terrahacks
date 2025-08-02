@@ -38,7 +38,7 @@ export default function Hero() {
       <div className="absolute bottom-0 left-0 right-0 z-10 p-4 sm:p-6 md:p-8">
         <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4">
           <Link
-            href="/camara"
+            href="/stream"
             className="group inline-flex items-center justify-center px-4 h-11 text-sm font-medium transition-colors bg-white/80 backdrop-blur-sm border border-black/10 rounded-full hover:bg-white text-text-primary gap-2"
           >
             {/* <div className="relative w-[18px] h-[18px]">

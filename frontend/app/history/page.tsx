@@ -81,7 +81,7 @@ export default function MedicalHistoryPage() {
 
       const newEvent: TimelineItem = {
         id: Date.now().toString(),
-        date: new Date().toISOString().split("T")[0], // Current date
+        date: new Date().toISOString().split("T")[0],
         title: `Uploaded: ${file.name}`,
         description: `A new file, "${file.name}", was uploaded to your medical history.`,
         fileUrl: publicUrl,
@@ -92,7 +92,6 @@ export default function MedicalHistoryPage() {
         [newEvent, ...prevEvents].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
       )
 
-      // Success toast
       toast.success("Upload Successful", {
         description: `${file.name} has been successfully uploaded to your medical history.`,
         icon: <CheckCircle className="h-4 w-4" />,

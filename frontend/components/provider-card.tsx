@@ -4,16 +4,19 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { StarIcon } from "lucide-react"
-import type { Provider } from "@/types/providers"
+import type { Provider } from "@/types/provider"
 
 type ProviderCardProps = {
   provider: Provider
-  onConnect: (providerId: string) => void
+  onViewDetails: (provider: Provider) => void // Changed prop name
 }
 
-export function ProviderCard({ provider, onConnect }: ProviderCardProps) {
+export function ProviderCard({ provider, onViewDetails }: ProviderCardProps) {
   return (
-    <Card className="flex flex-col sm:flex-row items-center p-4 bg-white shadow-card rounded-lg transition-all hover:shadow-lg">
+    <Card
+      className="flex flex-col sm:flex-row items-center p-4 bg-white shadow-card rounded-lg transition-all hover:shadow-lg cursor-pointer"
+      onClick={() => onViewDetails(provider)} // Make the whole card clickable
+    >
       <Avatar className="w-20 h-20 mb-4 sm:mb-0 sm:mr-6">
         <AvatarImage src={provider.imageUrl || "/placeholder.svg"} alt={`${provider.name}'s avatar`} />
         <AvatarFallback>
@@ -34,12 +37,16 @@ export function ProviderCard({ provider, onConnect }: ProviderCardProps) {
         </div>
         <p className="text-sm text-[var(--color-text-secondary)] mb-3 line-clamp-2">{provider.bio}</p>
         <p className="text-xs text-[var(--color-text-secondary)] mb-4">Location: {provider.location}</p>
+        {/* The button below is now primarily for visual indication, the card click handles the modal */}
         <Button
-          onClick={() => onConnect(provider.id)}
+          onClick={(e) => {
+            e.stopPropagation() // Prevent card click from firing again
+            onViewDetails(provider)
+          }}
           disabled={!provider.available}
           className="w-full sm:w-auto bg-[var(--color-accent)] text-white hover:bg-opacity-90 transition-colors duration-200 rounded-radius-button px-6 py-2"
         >
-          {provider.available ? "Connect Now" : "Not Available"}
+          {provider.available ? "View Details" : "Not Available"}
         </Button>
       </CardContent>
     </Card>

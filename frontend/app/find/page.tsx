@@ -1,46 +1,50 @@
-"use client";
+"use client"
 
-import { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
-import { ArrowLeftIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { ProviderCard } from "@/components/provider-card";
-import { SpecialtyFilter } from "@/components/specialty-filter";
-import { SearchInput } from "@/components/search-input";
-import { mockProviders, specialties } from "@/types/providers";
-
+import { useState, useMemo } from "react"
+import { useRouter } from "next/navigation"
+import { ArrowLeftIcon } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { ProviderCard } from "@/components/provider-card"
+import { SpecialtyFilter } from "@/components/specialty-filter"
+import { SearchInput } from "@/components/search-input"
+import { ProviderDetailsModal } from "@/components/provider-details-modal" // New import
+import { mockProviders, specialties, type Provider } from "@/types/provider" // Import Provider type
 export default function FindProviderPage() {
-  const router = useRouter();
-  const [selectedSpecialty, setSelectedSpecialty] = useState("All");
-  const [searchTerm, setSearchTerm] = useState("");
+  const router = useRouter()
+  const [selectedSpecialty, setSelectedSpecialty] = useState("All")
+  const [searchTerm, setSearchTerm] = useState("")
+  const [isModalOpen, setIsModalOpen] = useState(false) // New state for modal
+  const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null) // New state for selected provider
 
   const filteredProviders = useMemo(() => {
-    let filtered = mockProviders;
+    let filtered = mockProviders
 
     if (selectedSpecialty !== "All") {
-      filtered = filtered.filter(
-        (provider) => provider.specialty === selectedSpecialty
-      );
+      filtered = filtered.filter((provider) => provider.specialty === selectedSpecialty)
     }
 
     if (searchTerm) {
-      const lowerCaseSearchTerm = searchTerm.toLowerCase();
+      const lowerCaseSearchTerm = searchTerm.toLowerCase()
       filtered = filtered.filter(
         (provider) =>
           provider.name.toLowerCase().includes(lowerCaseSearchTerm) ||
-          provider.location.toLowerCase().includes(lowerCaseSearchTerm)
-      );
+          provider.location.toLowerCase().includes(lowerCaseSearchTerm) ||
+          provider.specialty.toLowerCase().includes(lowerCaseSearchTerm), // Also search by specialty
+      )
     }
 
-    return filtered;
-  }, [selectedSpecialty, searchTerm]);
+    return filtered
+  }, [selectedSpecialty, searchTerm])
 
-  const handleConnect = (providerId: string) => {
-    console.log(`Connecting with provider ID: ${providerId}`);
-    // In a real application, this would initiate a video call or chat
-    // For now, it's a placeholder.
-    alert(`Initiating connection with provider ID: ${providerId}`);
-  };
+  const handleViewDetails = (provider: Provider) => {
+    setSelectedProvider(provider)
+    setIsModalOpen(true)
+  }
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false)
+    setSelectedProvider(null)
+  }
 
   return (
     <div className="min-h-screen bg-[var(--color-primary-background)] text-[var(--color-text-primary)] font-[var(--font-body)] py-12 px-4 sm:px-6 lg:px-8">
@@ -61,21 +65,14 @@ export default function FindProviderPage() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 mb-8">
-          <SpecialtyFilter
-            specialties={specialties}
-            onSelectSpecialty={setSelectedSpecialty}
-          />
-          <SearchInput onSearch={setSearchTerm} />
+          <SpecialtyFilter specialties={specialties} onSelectSpecialty={setSelectedSpecialty} />
+          <SearchInput onSearch={setSearchTerm} placeholder="Search by name, location, or specialty..." />
         </div>
 
         <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
           {filteredProviders.length > 0 ? (
             filteredProviders.map((provider) => (
-              <ProviderCard
-                key={provider.id}
-                provider={provider}
-                onConnect={handleConnect}
-              />
+              <ProviderCard key={provider.id} provider={provider} onViewDetails={handleViewDetails} />
             ))
           ) : (
             <p className="col-span-full text-center text-[var(--color-text-secondary)] text-lg">
@@ -84,6 +81,10 @@ export default function FindProviderPage() {
           )}
         </div>
       </div>
+
+      {selectedProvider && (
+        <ProviderDetailsModal provider={selectedProvider} isOpen={isModalOpen} onClose={handleCloseModal} />
+      )}
     </div>
-  );
+  )
 }

@@ -30,23 +30,6 @@ export default function MedicalReportPage() {
                 </div>
               </div>
             </div>
-            <div className="border border-black p-2 text-[8px] w-[150px] h-[100px] flex flex-col justify-between">
-              <div className="flex justify-between">
-                <span>CONFIDENTIAL REPORT</span>
-                <div className="border border-black w-2 h-2"></div>
-              </div>
-              <div className="flex justify-between">
-                <div className="border border-black w-2 h-2"></div>
-                <div className="border border-black w-2 h-2"></div>
-              </div>
-              <p className="text-center mt-2">
-                AI-generated medical consultation report based on real-time assessment.
-              </p>
-              <div className="flex justify-between">
-                <div className="border border-black w-2 h-2"></div>
-                <div className="border border-black w-2 h-2"></div>
-              </div>
-            </div>
           </div>
 
           <h2 className="text-xl font-extrabold text-center mb-4">

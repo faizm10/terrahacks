@@ -1,271 +1,315 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import {
-  ArrowLeftIcon,
-  DownloadIcon,
-  FileTextIcon,
-  CalendarIcon,
-  ClockIcon,
-  StethoscopeIcon,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { ReportSection } from "@/components/report-section";
-import { SymptomBadge } from "@/components/symptom-badge";
 import { mockReport } from "@/types/report";
 
 export default function MedicalReportPage() {
-  const router = useRouter();
   const report = mockReport; // Using mock data for demonstration
 
-  const handleDownloadReport = () => {
-    // In a real application, this would trigger a PDF generation or download
-    alert("Downloading report (simulated)...");
-    console.log("Report data:", report);
+  // Helper to safely get parts of the patient name
+  const getPatientNamePart = (part: "first" | "last") => {
+    const nameParts = report.patientName.split(" ");
+    if (part === "first") return nameParts[0] || "";
+    if (part === "last") return nameParts.slice(1).join(" ") || "";
+    return "";
   };
 
   return (
-    <div className="min-h-screen bg-[var(--color-primary-background)] text-[var(--color-text-primary)] font-[var(--font-body)] py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-5xl mx-auto">
-        <div className="relative mb-8">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.back()}
-            className="absolute left-0 top-1/2 -translate-y-1/2 text-[var(--color-text-primary)] hover:bg-gray-200"
-            aria-label="Go back"
-          >
-            <ArrowLeftIcon className="h-6 w-6" />
-          </Button>
-          <h1 className="text-4xl sm:text-5xl font-bold text-center text-[var(--color-text-primary)] font-[var(--font-headline)]">
-            Medical Consultation Report
-          </h1>
+    <div className="min-h-screen bg-gray-100 flex justify-center items-start py-8">
+      <div className="w-[8.5in] h-[11in] bg-white border border-gray-300 shadow-lg relative overflow-hidden text-black text-[10px] font-sans">
+        {/* Header */}
+        <div className="relative z-20 p-6 pb-0">
+          <div className="flex justify-between items-start mb-4">
+            <div className="flex flex-col items-start">
+              <h1 className="text-lg font-bold mb-2">
+                Medical Consultation Report – Patient Assessment
+              </h1>
+              <div className="flex items-center gap-2">
+                <div className="flex flex-col text-[8px] font-medium leading-tight">
+                  <span>AI-Powered Medical</span>
+                  <span>Consultation System</span>
+                </div>
+              </div>
+            </div>
+            <div className="border border-black p-2 text-[8px] w-[150px] h-[100px] flex flex-col justify-between">
+              <div className="flex justify-between">
+                <span>CONFIDENTIAL REPORT</span>
+                <div className="border border-black w-2 h-2"></div>
+              </div>
+              <div className="flex justify-between">
+                <div className="border border-black w-2 h-2"></div>
+                <div className="border border-black w-2 h-2"></div>
+              </div>
+              <p className="text-center mt-2">
+                AI-generated medical consultation report based on real-time assessment.
+              </p>
+              <div className="flex justify-between">
+                <div className="border border-black w-2 h-2"></div>
+                <div className="border border-black w-2 h-2"></div>
+              </div>
+            </div>
+          </div>
+
+          <h2 className="text-xl font-extrabold text-center mb-4">
+            MEDICAL CONSULTATION REPORT
+            <br />
+            PATIENT ASSESSMENT SUMMARY
+          </h2>
         </div>
 
-        <Card className="bg-white shadow-card rounded-lg p-6 sm:p-8">
-          <CardHeader className="pb-6 border-b border-gray-200 mb-6">
-            <CardTitle className="text-3xl font-bold text-[var(--color-text-primary)] flex items-center gap-3">
-              <FileTextIcon className="h-8 w-8 text-[var(--color-accent)]" />
-              Report ID: {report.reportId}
-            </CardTitle>
-            <p className="text-sm text-[var(--color-text-secondary)] mt-2">
-              Generated on {report.consultationDate} at{" "}
-              {report.consultationTime}
-            </p>
-          </CardHeader>
-
-          <CardContent className="space-y-8">
-            <ReportSection title="Patient Information">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label
-                    htmlFor="patientName"
-                    className="text-[var(--color-text-secondary)]"
-                  >
-                    Patient Name
-                  </Label>
-                  <Input
-                    id="patientName"
-                    value={report.patientName}
-                    readOnly
-                    className="bg-gray-50 border-gray-200"
-                  />
-                </div>
-                <div>
-                  <Label
-                    htmlFor="patientId"
-                    className="text-[var(--color-text-secondary)]"
-                  >
-                    Patient ID
-                  </Label>
-                  <Input
-                    id="patientId"
-                    value={report.patientId}
-                    readOnly
-                    className="bg-gray-50 border-gray-200"
-                  />
-                </div>
-                <div>
-                  <Label
-                    htmlFor="dob"
-                    className="text-[var(--color-text-secondary)]"
-                  >
-                    Date of Birth
-                  </Label>
-                  <Input
-                    id="dob"
-                    value={report.dateOfBirth}
-                    readOnly
-                    className="bg-gray-50 border-gray-200"
-                  />
+        {/* Form Sections */}
+        <div className="relative z-20 px-6 space-y-4">
+          {/* PATIENT INFORMATION */}
+          <div className="border border-black">
+            <div className="bg-gray-200 p-1 font-bold text-[9px] border-b border-black">
+              PATIENT INFORMATION
+            </div>
+            <div className="grid grid-cols-2 border-b border-black">
+              <div className="p-1 border-r border-black">
+                <span className="font-medium">Family name</span>
+                <div className="border-b border-black mt-1 min-h-[1.5rem] flex items-center px-1">
+                  {getPatientNamePart("last")}
                 </div>
               </div>
-            </ReportSection>
-
-            <ReportSection title="Provider Information">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label
-                    htmlFor="providerName"
-                    className="text-[var(--color-text-secondary)]"
-                  >
-                    Provider Name
-                  </Label>
-                  <Input
-                    id="providerName"
-                    value={report.providerName}
-                    readOnly
-                    className="bg-gray-50 border-gray-200"
-                  />
-                </div>
-                <div>
-                  <Label
-                    htmlFor="providerSpecialty"
-                    className="text-[var(--color-text-secondary)]"
-                  >
-                    Specialty
-                  </Label>
-                  <Input
-                    id="providerSpecialty"
-                    value={report.providerSpecialty}
-                    readOnly
-                    className="bg-gray-50 border-gray-200"
-                  />
+              <div className="p-1">
+                <span className="font-medium">Given name(s)</span>
+                <div className="border-b border-black mt-1 min-h-[1.5rem] flex items-center px-1">
+                  {getPatientNamePart("first")}
                 </div>
               </div>
-            </ReportSection>
+            </div>
+            <div className="grid grid-cols-3 border-b border-black">
+              <div className="p-1 border-r border-black">
+                <span className="font-medium">Date of Birth</span>
+                <div className="border-b border-black mt-1 min-h-[1.5rem] flex items-center px-1">
+                  {report.dateOfBirth}
+                </div>
+              </div>
+              <div className="p-1 border-r border-black">
+                <span className="font-medium">Consultation Date</span>
+                <div className="border-b border-black mt-1 min-h-[1.5rem] flex items-center px-1">
+                  {report.consultationDate}
+                </div>
+              </div>
+              <div className="p-1">
+                <span className="font-medium">Report ID</span>
+                <div className="border-b border-black mt-1 min-h-[1.5rem] flex items-center px-1">
+                  {report.reportId}
+                </div>
+              </div>
+            </div>
+          </div>
 
-            <ReportSection title="Consultation Details">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center gap-2">
-                  <CalendarIcon className="h-5 w-5 text-[var(--color-accent)]" />
-                  <Label className="text-[var(--color-text-secondary)]">
-                    Date:
-                  </Label>
-                  <span className="font-medium">{report.consultationDate}</span>
+          {/* SYMPTOMS ASSESSMENT */}
+          <div className="border border-black">
+            <div className="bg-gray-200 p-1 font-bold text-[9px] border-b border-black">
+              SYMPTOMS ASSESSMENT
+            </div>
+            <div className="p-2">
+              <div className="mb-2">
+                <span className="font-medium">Primary Symptoms:</span>
+                <div className="border-b border-black mt-1 min-h-[1.5rem] flex items-center px-1">
+                  {report.detectedSymptoms.join(", ") || "No specific symptoms reported"}
                 </div>
-                <div className="flex items-center gap-2">
-                  <ClockIcon className="h-5 w-5 text-[var(--color-accent)]" />
-                  <Label className="text-[var(--color-text-secondary)]">
-                    Time:
-                  </Label>
-                  <span className="font-medium">{report.consultationTime}</span>
+              </div>
+              <div className="mb-2">
+                <span className="font-medium">Symptom Description:</span>
+                <div className="border-b border-black mt-1 min-h-[1.5rem] flex items-center px-1">
+                  {report.consultationSummary.substring(0, 80)}...
                 </div>
-                <div className="flex items-center gap-2 col-span-full">
-                  <StethoscopeIcon className="h-5 w-5 text-[var(--color-accent)]" />
-                  <Label className="text-[var(--color-text-secondary)]">
-                    Type:
-                  </Label>
-                  <span className="font-medium">{report.consultationType}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <span className="font-medium">Onset Pattern:</span>
+                  <div className="border-b border-black mt-1 min-h-[1.5rem] flex items-center px-1">
+                    Gradual onset
+                  </div>
+                </div>
+                <div>
+                  <span className="font-medium">Triggers:</span>
+                  <div className="border-b border-black mt-1 min-h-[1.5rem] flex items-center px-1">
+                    Stress, environmental factors
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* CLINICAL STATUS */}
+          <div className="border border-black">
+            <div className="bg-gray-200 p-1 font-bold text-[9px] border-b border-black">
+              CLINICAL STATUS
+            </div>
+            <div className="grid grid-cols-2 p-2 gap-y-2">
+              <div className="flex items-center gap-2">
+                <div className="border border-black w-4 h-4 flex-shrink-0"></div>
+                <span>Stable - No immediate medical intervention required</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="border border-black w-4 h-4 flex-shrink-0"></div>
+                <span>Requires follow-up monitoring</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="border border-black w-4 h-4 flex-shrink-0"></div>
+                <span>Mild symptoms present</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="border border-black w-4 h-4 flex-shrink-0"></div>
+                <span>No acute distress</span>
+              </div>
+            </div>
+          </div>
+
+          {/* DURATION AND SEVERITY */}
+          <div className="border border-black">
+            <div className="bg-gray-200 p-1 font-bold text-[9px] border-b border-black">
+              DURATION AND SEVERITY
+            </div>
+            <div className="grid grid-cols-2 border-b border-black">
+              <div className="p-1 border-r border-black">
+                <span className="font-medium">Duration of Symptoms</span>
+                <div className="border-b border-black mt-1 min-h-[1.5rem] flex items-center px-1">
+                  2-4 weeks
+                </div>
+              </div>
+              <div className="p-1">
+                <span className="font-medium">Severity Level</span>
+                <div className="border-b border-black mt-1 min-h-[1.5rem] flex items-center px-1">
+                  Mild to Moderate
+                </div>
+              </div>
+            </div>
+            <div className="p-2">
+              <span className="font-medium">Severity Assessment:</span>
+              <div className="border-b border-black mt-1 min-h-[1.5rem] flex items-center px-1">
+                Symptoms are manageable and do not significantly impact daily activities
+              </div>
+            </div>
+          </div>
+
+          {/* POTENTIAL CONSIDERATIONS */}
+          <div className="border border-black">
+            <div className="bg-gray-200 p-1 font-bold text-[9px] border-b border-black">
+              POTENTIAL CONSIDERATIONS
+            </div>
+            <div className="p-2">
+              <div className="mb-2">
+                <span className="font-medium">Differential Diagnoses:</span>
+                <div className="border-b border-black mt-1 min-h-[1.5rem] flex items-center px-1">
+                  Stress-related symptoms, mild anxiety, environmental factors
+                </div>
+              </div>
+              <div className="mb-2">
+                <span className="font-medium">Risk Factors Identified:</span>
+                <div className="border-b border-black mt-1 min-h-[1.5rem] flex items-center px-1">
+                  Stress, lifestyle factors, potential environmental triggers
+                </div>
+              </div>
+              <div className="mb-2">
+                <span className="font-medium">Red Flags (if any):</span>
+                <div className="border-b border-black mt-1 min-h-[1.5rem] flex items-center px-1">
+                  None identified during this consultation
                 </div>
               </div>
               <div>
-                <Label
-                  htmlFor="mainComplaint"
-                  className="text-[var(--color-text-secondary)]"
-                >
-                  Main Complaint
-                </Label>
-                <Textarea
-                  id="mainComplaint"
-                  value={report.mainComplaint}
-                  readOnly
-                  className="bg-gray-50 border-gray-200 min-h-[80px]"
-                />
+                <span className="font-medium">Additional Considerations:</span>
+                <div className="border-b border-black mt-1 min-h-[1.5rem] flex items-center px-1">
+                  Monitor for symptom progression, consider lifestyle modifications
+                </div>
               </div>
-            </ReportSection>
-
-            <ReportSection title="Detected Symptoms & Visual Cues">
-              <div className="flex flex-wrap gap-2">
-                {report.detectedSymptoms.map((symptom, index) => (
-                  <SymptomBadge key={index} symptom={symptom} />
-                ))}
-              </div>
-              {report.timestampedFrames &&
-                report.timestampedFrames.length > 0 && (
-                  <div className="mt-4">
-                    <h3 className="text-md font-medium text-[var(--color-text-primary)] mb-2">
-                      Timestamped Visuals:
-                    </h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                      {report.timestampedFrames.map((frame, index) => (
-                        <div
-                          key={index}
-                          className="flex flex-col items-center text-center"
-                        >
-                          <img
-                            src={frame.imageUrl || "/placeholder.svg"}
-                            alt={frame.description}
-                            className="w-full h-auto rounded-md object-cover mb-1 border border-gray-200"
-                          />
-                          <p className="text-xs text-[var(--color-text-secondary)] font-medium">
-                            {frame.time}
-                          </p>
-                          <p className="text-xs text-[var(--color-text-secondary)]">
-                            {frame.description}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-            </ReportSection>
-
-            <ReportSection title="Consultation Summary">
-              <Textarea
-                id="consultationSummary"
-                value={report.consultationSummary}
-                readOnly
-                className="bg-gray-50 border-gray-200 min-h-[120px]"
-              />
-            </ReportSection>
-
-            <ReportSection title="Potential Diagnoses">
-              <ul className="list-disc list-inside text-[var(--color-text-primary)]">
-                {report.potentialDiagnoses.map((diagnosis, index) => (
-                  <li key={index}>{diagnosis}</li>
-                ))}
-              </ul>
-            </ReportSection>
-
-            <ReportSection title="Recommendations">
-              <ul className="list-decimal list-inside text-[var(--color-text-primary)]">
-                {report.recommendations.map((rec, index) => (
-                  <li key={index}>{rec}</li>
-                ))}
-              </ul>
-            </ReportSection>
-
-            <ReportSection title="Video Attachment">
-              <div className="flex flex-col items-center">
-                <video
-                  controls
-                  className="w-full max-w-xl rounded-lg shadow-md border border-gray-200"
-                >
-                  <source src={report.videoAttachmentUrl} type="video/mp4" />
-                  Your browser does not support the video tag.
-                </video>
-                <p className="text-sm text-[var(--color-text-secondary)] mt-2">
-                  {report.videoAttachmentName}
-                </p>
-              </div>
-            </ReportSection>
-
-            <div className="flex justify-center mt-8">
-              <Button
-                onClick={handleDownloadReport}
-                className="bg-[var(--color-accent)] text-white hover:bg-opacity-90 transition-colors duration-200 rounded-radius-button px-8 py-3 text-lg flex items-center gap-2"
-              >
-                <DownloadIcon className="h-5 w-5" />
-                Download Report
-              </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+
+          {/* RECOMMENDATIONS */}
+          <div className="border border-black">
+            <div className="bg-gray-200 p-1 font-bold text-[9px] border-b border-black">
+              RECOMMENDATIONS
+            </div>
+            <div className="p-2">
+              <div className="mb-2">
+                <span className="font-medium">Immediate Actions:</span>
+                <div className="border-b border-black mt-1 min-h-[1.5rem] flex items-center px-1">
+                  Monitor symptoms, maintain current activities, stress management
+                </div>
+              </div>
+              <div className="mb-2">
+                <span className="font-medium">Lifestyle Modifications:</span>
+                <div className="border-b border-black mt-1 min-h-[1.5rem] flex items-center px-1">
+                  Regular exercise, stress reduction techniques, adequate sleep
+                </div>
+              </div>
+              <div className="mb-2">
+                <span className="font-medium">Follow-up Plan:</span>
+                <div className="border-b border-black mt-1 min-h-[1.5rem] flex items-center px-1">
+                  Re-evaluate in 2-4 weeks if symptoms persist or worsen
+                </div>
+              </div>
+              <div>
+                <span className="font-medium">When to Seek Further Care:</span>
+                <div className="border-b border-black mt-1 min-h-[1.5rem] flex items-center px-1">
+                  If symptoms worsen, new symptoms develop, or daily activities are affected
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* AI PHYSICIAN DECLARATION */}
+          <div className="border border-black">
+            <div className="bg-gray-200 p-1 font-bold text-[9px] border-b border-black">
+              AI PHYSICIAN DECLARATION
+            </div>
+            <div className="p-2">
+              <div className="mb-2">
+                <span className="font-medium">Assessment Confidence Level:</span>
+                <div className="flex gap-4 mt-1">
+                  <div className="flex items-center gap-1">
+                    <div className="border border-black w-4 h-4 flex-shrink-0"></div>
+                    <span>High</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="border border-black w-4 h-4 flex-shrink-0"></div>
+                    <span>Medium</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="border border-black w-4 h-4 flex-shrink-0"></div>
+                    <span>Low</span>
+                  </div>
+                </div>
+              </div>
+              <div className="mb-2">
+                <span className="font-medium">Limitations of AI Assessment:</span>
+                <div className="border-b border-black mt-1 min-h-[1.5rem] flex items-center px-1">
+                  This assessment is based on reported symptoms and may not capture all clinical nuances
+                </div>
+              </div>
+              <div className="mb-2">
+                <span className="font-medium">Recommendation for In-Person Evaluation:</span>
+                <div className="border-b border-black mt-1 min-h-[1.5rem] flex items-center px-1">
+                  Consider in-person evaluation if symptoms persist or worsen
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 border-t border-black">
+              <div className="p-1 border-r border-black">
+                <span className="font-medium">AI System</span>
+                <div className="border-b border-black mt-1 min-h-[1.5rem] flex items-center px-1">
+                  {report.providerName}
+                </div>
+              </div>
+              <div className="p-1">
+                <span className="font-medium">Report Generated</span>
+                <div className="border-b border-black mt-1 min-h-[1.5rem] flex items-center px-1">
+                  {report.consultationDate}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="relative z-20 flex justify-between items-end px-6 py-4 text-[8px] mt-4">
+          <span>AI Medical Consultation Report - {report.reportId}</span>
+          <span>Generated by AI-Powered Medical System</span>
+        </div>
       </div>
     </div>
   );

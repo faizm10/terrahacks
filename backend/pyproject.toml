@@ -10,4 +10,7 @@ dependencies = [
     "openai>=1.98.0",
     "uvicorn>=0.34.0",
     "aiortc>=1.13.0",
+    "websockets>=14.1",
+    "numpy>=2.3.2",
+    "aiohttp>=3.10.0",
 ]

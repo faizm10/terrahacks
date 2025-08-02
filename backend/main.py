@@ -1,7 +1,17 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api.routes import openai, stream
+from api.routes import openai, stream, realtime
 import uvicorn
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
+logger = logging.getLogger(__name__)
+logger.info("🚀 Starting TerraHacks Backend API with comprehensive logging")
 
 app = FastAPI(title="TerraHacks Backend API")
 
@@ -18,6 +28,7 @@ app.add_middleware(
 
 app.include_router(openai.router, prefix="/api/openai", tags=["OpenAI"])
 app.include_router(stream.router, prefix="/api/stream", tags=["Streaming"])
+app.include_router(realtime.router, prefix="/api/realtime", tags=["Realtime"])
 
 @app.get("/")
 def read_root():

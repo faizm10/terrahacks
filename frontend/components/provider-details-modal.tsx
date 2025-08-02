@@ -35,13 +35,13 @@ export function ProviderDetailsModal({
   if (!provider) return null;
 
   const handleVideoCall = () => {
-    if (provider.videoCallLink) {
-      window.open(provider.videoCallLink, "_blank");
-    } else {
-      alert("Video call link not available for this provider.");
-    }
-    onClose();
-  };
+  if (provider?.videoCallLink) {
+    window.location.href = "/stream"; // redirect to /stream
+  } else {
+    alert("Video call link not available for this provider.");
+  }
+  onClose();
+};
 
   const handlePhoneCall = () => {
     if (provider.phone) {

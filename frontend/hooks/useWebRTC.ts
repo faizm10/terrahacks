@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import SimplePeer from 'simple-peer';
 
 interface UseWebRTCReturn {
   isConnected: boolean;
@@ -10,7 +9,7 @@ interface UseWebRTCReturn {
   error: string | null;
   startStream: () => Promise<void>;
   stopStream: () => void;
-  connectToPeer: () => Promise<void>;
+  connectToOpenAI: () => Promise<void>;
 }
 
 export const useWebRTC = (): UseWebRTCReturn => {
@@ -19,121 +18,207 @@ export const useWebRTC = (): UseWebRTCReturn => {
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
   
-  const peerRef = useRef<SimplePeer.Instance | null>(null);
+  const peerRef = useRef<RTCPeerConnection | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const dataChannelRef = useRef<RTCDataChannel | null>(null);
+  const audioElementRef = useRef<HTMLAudioElement | null>(null);
+  const sessionIdRef = useRef<string>('default');
 
   const startStream = useCallback(async () => {
     try {
       setError(null);
       
-      // Get user media (camera)
+      // Get user media (camera and microphone)
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
-        audio: false // Only video for now
+        audio: true
       });
       
       setLocalStream(stream);
       streamRef.current = stream;
       setIsStreaming(true);
       
+      console.log('✅ Media stream started');
+      
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to access camera';
+      const errorMsg = err instanceof Error ? err.message : 'Failed to access camera/microphone';
       setError(errorMsg);
-      console.error('Error accessing camera:', err);
+      console.error('❌ Error accessing media:', err);
     }
   }, []);
 
-  const connectToPeer = useCallback(async () => {
+  const connectToOpenAI = useCallback(async () => {
     if (!streamRef.current) {
-      setError('No stream available. Start stream first.');
+      setError('No stream available. Start camera/microphone first.');
       return;
     }
 
     try {
       setError(null);
+      console.log('🚀 Starting OpenAI WebRTC connection...');
       
-      // Create peer connection as initiator
-      const peer = new SimplePeer({
-        initiator: true,
-        trickle: false, // Wait for all ICE candidates
-        stream: streamRef.current,
-        config: {
-          iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' }
-          ]
+      // Step 1: Get ephemeral key from backend
+      console.log('🔑 Getting ephemeral session...');
+      const sessionResponse = await fetch('http://localhost:8000/api/stream/session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          session_id: sessionIdRef.current
+        }),
+      });
+
+      if (!sessionResponse.ok) {
+        throw new Error(`Session creation failed: ${sessionResponse.status}`);
+      }
+
+      const sessionData = await sessionResponse.json();
+      const ephemeralKey = sessionData.client_secret.value;
+      console.log('✅ Ephemeral session created:', sessionData.openai_session_id);
+
+      // Step 2: Create RTCPeerConnection
+      const pc = new RTCPeerConnection({
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' }
+        ]
+      });
+      peerRef.current = pc;
+
+      // Step 3: Set up audio element for receiving AI responses
+      if (!audioElementRef.current) {
+        audioElementRef.current = document.createElement('audio');
+        audioElementRef.current.autoplay = true;
+        document.body.appendChild(audioElementRef.current);
+      }
+
+      pc.ontrack = (event) => {
+        console.log('🔊 Received audio track from OpenAI');
+        if (audioElementRef.current) {
+          audioElementRef.current.srcObject = event.streams[0];
         }
-      });
+      };
 
-      peerRef.current = peer;
+      // Step 4: Add local audio track (microphone)
+      const audioTrack = streamRef.current.getAudioTracks()[0];
+      if (audioTrack) {
+        pc.addTrack(audioTrack, streamRef.current);
+        console.log('🎤 Added local audio track to peer connection');
+      }
 
-      peer.on('error', (err: Error) => {
-        console.error('Peer error:', err);
-        setError(`Peer connection error: ${err.message}`);
-        setIsConnected(false);
-      });
+      // Step 5: Set up data channel for events
+      const dataChannel = pc.createDataChannel('oai-events');
+      dataChannelRef.current = dataChannel;
 
-      peer.on('signal', async (data: SimplePeer.SignalData) => {
-        if (data.type === 'offer') {
-          try {
-            console.log('Sending offer to backend...');
+      dataChannel.onopen = () => {
+        console.log('📡 Data channel opened');
+      };
+
+      dataChannel.onmessage = async (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          console.log('📝 Received OpenAI event:', data.type);
+          
+          // Forward transcript events to backend for storage
+          if (data.type === 'conversation.item.input_audio_transcription.completed' ||
+              data.type === 'response.audio_transcript.done') {
             
-            // Send offer to backend
-            const response = await fetch('http://localhost:8000/api/stream/connect', {
+            await fetch('http://localhost:8000/api/stream/transcript', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                sdp: data.sdp,
-                type: data.type,
-                session_id: 'default'
+                ...data,
+                session_id: sessionIdRef.current
               }),
             });
+          }
+        } catch (error) {
+          console.error('❌ Error processing data channel message:', error);
+        }
+      };
 
-            if (!response.ok) {
-              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
+      dataChannel.onerror = (error) => {
+        console.error('❌ Data channel error:', error);
+      };
 
-            const answer = await response.json();
-            console.log('Received answer from backend:', answer);
-            
-            // Apply the answer
-            peer.signal({
-              type: 'answer',
-              sdp: answer.sdp
-            });
-            
-          } catch (err) {
-            const errorMsg = err instanceof Error ? err.message : 'Failed to connect to backend';
-            setError(`Backend connection error: ${errorMsg}`);
-            console.error('Backend connection error:', err);
+      // Step 6: Handle connection state changes
+      pc.onconnectionstatechange = () => {
+        console.log('🔄 Connection state:', pc.connectionState);
+        if (pc.connectionState === 'connected') {
+          setIsConnected(true);
+          console.log('🎉 WebRTC connection established with OpenAI!');
+        } else if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+          setIsConnected(false);
+          if (pc.connectionState === 'failed') {
+            setError('WebRTC connection failed');
           }
         }
+      };
+
+      pc.onicecandidategatheringstatechange = () => {
+        console.log('🧊 ICE gathering state:', pc.iceGatheringState);
+      };
+
+      // Step 7: Create offer and set local description
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      console.log('📋 Created WebRTC offer');
+
+      // Step 8: Send offer to OpenAI via backend
+      console.log('📡 Sending offer to OpenAI...');
+      const webrtcResponse = await fetch('http://localhost:8000/api/stream/webrtc', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sdp: offer.sdp,
+          session_id: sessionIdRef.current
+        }),
       });
 
-      peer.on('connect', () => {
-        console.log('Peer connected!');
-        setIsConnected(true);
-        setError(null);
-      });
+      if (!webrtcResponse.ok) {
+        throw new Error(`WebRTC setup failed: ${webrtcResponse.status}`);
+      }
 
-      peer.on('close', () => {
-        console.log('Peer connection closed');
-        setIsConnected(false);
+      // Step 9: Set remote description with OpenAI's answer
+      const answerSdp = await webrtcResponse.text();
+      await pc.setRemoteDescription({
+        type: 'answer',
+        sdp: answerSdp
       });
+      
+      console.log('✅ WebRTC connection setup complete');
 
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to create peer connection';
-      setError(errorMsg);
-      console.error('Peer creation error:', err);
+      const errorMsg = err instanceof Error ? err.message : 'Failed to connect to OpenAI';
+      setError(`OpenAI connection error: ${errorMsg}`);
+      console.error('❌ OpenAI connection error:', err);
+      setIsConnected(false);
     }
   }, []);
 
   const stopStream = useCallback(() => {
-    // Stop peer connection
+    console.log('🛑 Stopping WebRTC connection...');
+    
+    // Close peer connection
     if (peerRef.current) {
-      peerRef.current.destroy();
+      peerRef.current.close();
       peerRef.current = null;
+    }
+    
+    // Close data channel
+    if (dataChannelRef.current) {
+      dataChannelRef.current.close();
+      dataChannelRef.current = null;
+    }
+    
+    // Remove audio element
+    if (audioElementRef.current) {
+      document.body.removeChild(audioElementRef.current);
+      audioElementRef.current = null;
     }
     
     // Stop media stream
@@ -142,10 +227,17 @@ export const useWebRTC = (): UseWebRTCReturn => {
       streamRef.current = null;
     }
     
+    // Disconnect session on backend
+    fetch(`http://localhost:8000/api/stream/disconnect/${sessionIdRef.current}`, {
+      method: 'DELETE'
+    }).catch(console.error);
+    
     setLocalStream(null);
     setIsStreaming(false);
     setIsConnected(false);
     setError(null);
+    
+    console.log('✅ WebRTC connection stopped');
   }, []);
 
   return {
@@ -155,6 +247,6 @@ export const useWebRTC = (): UseWebRTCReturn => {
     error,
     startStream,
     stopStream,
-    connectToPeer,
+    connectToPeer: connectToOpenAI, // Keep this for backward compatibility
   };
 };

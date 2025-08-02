@@ -1,12 +1,16 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useWebRTC } from '../../hooks/useWebRTC';
 import { useTranscript } from '../../hooks/useTranscript';
 
 export default function TestStreamPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const transcriptEndRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const [isFinishing, setIsFinishing] = useState(false);
+  
   const {
     isConnected,
     localStream,
@@ -47,6 +51,37 @@ export default function TestStreamPage() {
     disconnect();
   };
 
+  const handleFinishConversation = async () => {
+    try {
+      setIsFinishing(true);
+      console.log('🏁 Finishing conversation...');
+      
+      // Call the finish endpoint
+      const response = await fetch('http://localhost:8000/api/stream/finish/default', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to finish conversation: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Conversation finished:', result);
+      
+      // Disconnect WebRTC and transcript connections
+      disconnectTranscript();
+      disconnect();
+      
+      // Navigate to results page
+      router.push(`/results/default`);
+      
+    } catch (error) {
+      console.error('❌ Error finishing conversation:', error);
+      setIsFinishing(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 p-4">
       <div className="max-w-7xl mx-auto">
@@ -80,15 +115,23 @@ export default function TestStreamPage() {
               <div className="flex flex-wrap gap-4">
                 <button
                   onClick={connect}
-                  disabled={isConnected}
+                  disabled={isConnected || isFinishing}
                   className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
                   {isConnected ? 'Connected to OpenAI' : 'Connect to OpenAI'}
                 </button>
                 
                 <button
+                  onClick={handleFinishConversation}
+                  disabled={!isConnected || isFinishing || transcripts.length === 0}
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  {isFinishing ? 'Analyzing...' : 'Finish Conversation'}
+                </button>
+                
+                <button
                   onClick={handleDisconnect}
-                  disabled={!isConnected}
+                  disabled={!isConnected || isFinishing}
                   className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
                   Disconnect

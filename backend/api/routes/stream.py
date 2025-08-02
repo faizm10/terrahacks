@@ -5,11 +5,14 @@ import logging
 import sys
 import os
 import aiohttp
+import openai
 from datetime import datetime
+import json
 
 # Add parent directory to path to import services
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from services.conversation_store import conversation_store
+from api.types.medical_types import FinishConversationResponse
 
 logger = logging.getLogger(__name__)
 
@@ -228,3 +231,143 @@ async def disconnect_session(session_id: str = "default"):
         "status": "disconnected",
         "cleaned_up": cleanup_tasks
     }
+
+@router.post("/finish/{session_id}")
+async def finish_conversation(session_id: str = "default") -> FinishConversationResponse:
+    """Finish conversation, analyze transcript with LLM, and return results"""
+    try:
+        logger.info(f"🏁 Finishing conversation for session: {session_id}")
+        
+        # Step 1: Get conversation data before cleanup
+        conversation = conversation_store.get_conversation(session_id)
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        # Step 2: Extract transcript text for LLM analysis
+        transcripts = conversation.get("transcripts", [])
+        if not transcripts:
+            raise HTTPException(status_code=400, detail="No conversation data to analyze")
+        
+        # Build conversation text
+        conversation_text = ""
+        for transcript in transcripts:
+            role = "Patient" if transcript["role"] == "user" else "AI Assistant"
+            conversation_text += f"{role}: {transcript['content']}\n"
+        
+        logger.info(f"📋 Analyzing conversation with {len(transcripts)} transcript entries")
+        
+        # Step 3: Send to LLM for medical analysis
+        openai_api_key = os.getenv("OPENAI_API_KEY")
+        if not openai_api_key:
+            raise HTTPException(status_code=500, detail="OpenAI API key not configured")
+        
+        client = openai.OpenAI(api_key=openai_api_key)
+        
+        analysis_prompt = f"""
+You are a medical AI assistant. Analyze this patient conversation and provide a structured assessment.
+
+Conversation:
+{conversation_text}
+
+Please provide your analysis in the following JSON format:
+{{
+    "symptoms": ["list of symptoms mentioned"],
+    "severity": "low/medium/high",
+    "potential_conditions": ["possible conditions to investigate"],
+    "recommendations": "brief recommendations for next steps"
+}}
+
+Focus on:
+- Extracting clear symptoms mentioned by the patient
+- Assessing overall severity based on symptoms described
+- Suggesting potential conditions that warrant investigation
+- Providing actionable next steps
+
+Be conservative and always recommend consulting a healthcare professional for serious concerns.
+"""
+
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "You are a medical AI assistant providing preliminary symptom analysis."},
+                {"role": "user", "content": analysis_prompt}
+            ],
+            temperature=0.3,
+            max_tokens=1000
+        )
+        
+        # Step 4: Parse LLM response
+        try:
+            content = response.choices[0].message.content
+            if content is None:
+                raise ValueError("Empty response from LLM")
+            analysis_result = json.loads(content)
+        except (json.JSONDecodeError, ValueError):
+            logger.error("Failed to parse LLM response as JSON")
+            # Fallback analysis
+            analysis_result = {
+                "symptoms": ["Analysis unavailable"],
+                "severity": "unknown",
+                "potential_conditions": ["Requires manual review"],
+                "recommendations": "Please consult with a healthcare professional for proper evaluation."
+            }
+        
+        # Step 5: Calculate session metrics
+        duration_seconds = conversation.get("duration_seconds", 0)
+        if not duration_seconds and conversation.get("start_time"):
+            start = datetime.fromisoformat(conversation["start_time"])
+            end = datetime.now()
+            duration_seconds = (end - start).total_seconds()
+        
+        # Step 6: Store analysis results before cleanup
+        conversation_store.store_analysis(session_id, {
+            "session_id": session_id,
+            "status": "analyzed",
+            "duration_seconds": duration_seconds,
+            "transcript_count": len(transcripts),
+            "symptoms": analysis_result.get("symptoms", []),
+            "severity": analysis_result.get("severity", "unknown"),
+            "potential_conditions": analysis_result.get("potential_conditions", []),
+            "recommendations": analysis_result.get("recommendations", "Consult a healthcare professional.")
+        })
+        
+        # Step 7: Cleanup session (same as disconnect)
+        cleanup_tasks = []
+        if session_id in sessions:
+            sessions.pop(session_id, None)
+            cleanup_tasks.append("session")
+        
+        conversation_store.end_session(session_id)
+        cleanup_tasks.append("conversation")
+        
+        logger.info(f"✅ Conversation analysis completed for session: {session_id}")
+        logger.info(f"📊 Found {len(analysis_result.get('symptoms', []))} symptoms, severity: {analysis_result.get('severity', 'unknown')}")
+        
+        return FinishConversationResponse(
+            session_id=session_id,
+            status="analyzed",
+            duration_seconds=duration_seconds,
+            transcript_count=len(transcripts),
+            symptoms=analysis_result.get("symptoms", []),
+            severity=analysis_result.get("severity", "unknown"),
+            potential_conditions=analysis_result.get("potential_conditions", []),
+            recommendations=analysis_result.get("recommendations", "Consult a healthcare professional.")
+        )
+        
+    except Exception as e:
+        logger.error(f"❌ Error finishing conversation: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/analysis/{session_id}")
+async def get_analysis_results(session_id: str = "default"):
+    """Get analysis results for a completed session"""
+    try:
+        analysis = conversation_store.get_analysis(session_id)
+        if not analysis:
+            raise HTTPException(status_code=404, detail="Analysis not found for this session")
+        
+        return JSONResponse(content=analysis)
+        
+    except Exception as e:
+        logger.error(f"❌ Error fetching analysis: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

@@ -99,6 +99,19 @@ class ConversationStore:
     def get_conversation(self, session_id: str) -> Optional[Dict[str, Any]]:
         """Get a complete conversation by session ID"""
         return self.conversations.get(session_id)
+    
+    def store_analysis(self, session_id: str, analysis_result: Dict[str, Any]) -> None:
+        """Store analysis results for a session"""
+        if session_id in self.conversations:
+            self.conversations[session_id]["analysis"] = analysis_result
+            logger.info(f"Analysis stored for session: {session_id}")
+    
+    def get_analysis(self, session_id: str) -> Optional[Dict[str, Any]]:
+        """Get analysis results for a session"""
+        conversation = self.conversations.get(session_id)
+        if conversation:
+            return conversation.get("analysis")
+        return None
         
             
 

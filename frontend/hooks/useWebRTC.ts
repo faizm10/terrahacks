@@ -25,21 +25,31 @@ export const useWebRTC = (): UseWebRTCReturn => {
   const startStream = useCallback(async () => {
     try {
       setError(null);
+      console.log('Starting stream...');
       
-      // Get user media (camera)
+      // Get user media (camera + microphone)
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: false // Only video for now
+        video: {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          frameRate: { ideal: 30 }
+        },
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
       });
       
+      console.log('Media stream obtained:', stream.getTracks().map(track => track.kind));
       setLocalStream(stream);
       streamRef.current = stream;
       setIsStreaming(true);
       
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to access camera';
+      const errorMsg = err instanceof Error ? err.message : 'Failed to access camera/microphone';
       setError(errorMsg);
-      console.error('Error accessing camera:', err);
+      console.error('Error accessing camera/microphone:', err);
     }
   }, []);
 
@@ -51,6 +61,13 @@ export const useWebRTC = (): UseWebRTCReturn => {
 
     try {
       setError(null);
+      console.log('Connecting to peer...');
+      
+      // Clean up any existing peer
+      if (peerRef.current) {
+        peerRef.current.destroy();
+        peerRef.current = null;
+      }
       
       // Create peer connection as initiator
       const peer = new SimplePeer({
@@ -59,7 +76,9 @@ export const useWebRTC = (): UseWebRTCReturn => {
         stream: streamRef.current,
         config: {
           iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' }
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' }
           ]
         }
       });
@@ -91,11 +110,16 @@ export const useWebRTC = (): UseWebRTCReturn => {
             });
 
             if (!response.ok) {
-              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+              const errorText = await response.text();
+              throw new Error(`HTTP ${response.status}: ${errorText}`);
             }
 
             const answer = await response.json();
             console.log('Received answer from backend:', answer);
+            
+            if (answer.status !== 'success') {
+              throw new Error(`Backend returned error: ${answer.status}`);
+            }
             
             // Apply the answer
             peer.signal({
@@ -122,6 +146,14 @@ export const useWebRTC = (): UseWebRTCReturn => {
         setIsConnected(false);
       });
 
+      peer.on('iceStateChange', (state: string) => {
+        console.log('ICE state changed:', state);
+      });
+
+      peer.on('iceConnectionStateChange', (state: string) => {
+        console.log('ICE connection state changed:', state);
+      });
+
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to create peer connection';
       setError(errorMsg);
@@ -130,6 +162,8 @@ export const useWebRTC = (): UseWebRTCReturn => {
   }, []);
 
   const stopStream = useCallback(() => {
+    console.log('Stopping stream...');
+    
     // Stop peer connection
     if (peerRef.current) {
       peerRef.current.destroy();
@@ -138,7 +172,10 @@ export const useWebRTC = (): UseWebRTCReturn => {
     
     // Stop media stream
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current.getTracks().forEach(track => {
+        track.stop();
+        console.log('Stopped track:', track.kind);
+      });
       streamRef.current = null;
     }
     
@@ -146,6 +183,7 @@ export const useWebRTC = (): UseWebRTCReturn => {
     setIsStreaming(false);
     setIsConnected(false);
     setError(null);
+    console.log('Stream stopped');
   }, []);
 
   return {

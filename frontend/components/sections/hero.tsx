@@ -15,7 +15,7 @@ const VIDEO_SAFARI_URL =
 export default function Hero() {
   return (
     <section className="relative w-full h-screen overflow-hidden bg-primary-background">
-      <div className="absolute inset-0 z-0">
+      {/* <div className="absolute inset-0 z-0">
         <video
           loop
           muted
@@ -27,10 +27,18 @@ export default function Hero() {
           <source src={VIDEO_SAFARI_URL} type="video/mp4" />
           <source src={VIDEO_CHROME_URL} type="video/webm" />
         </video>
+      </div> */}
+
+      <div className="absolute inset-0 z-0 flex items-center justify-center">
+       <img
+         src="/login-page-img.gif"
+         alt="doctor animation"
+         className="object-contain w-[550px] h-auto"
+        />
       </div>
 
       <div className="relative z-10 flex flex-col items-center justify-center h-full text-center px-4">
-        <h1 className="font-bold text-text-primary leading-[0.8] -tracking-[0.05em] text-[clamp(4.5rem,20vw,15rem)]">
+        <h1 className="font-bold text-text-primary leading-[0.8] -tracking-[0.05em] text-[clamp(4.5rem,20vw,15rem)] opacity-75">
           MediCare
         </h1>
       </div>

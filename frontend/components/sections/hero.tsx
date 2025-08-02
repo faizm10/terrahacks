@@ -1,4 +1,4 @@
-import { ArrowBigRight, Check } from "lucide-react";
+import { ArrowBigRight, Check, Calendar, FileText, Phone, File } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -36,19 +36,38 @@ export default function Hero() {
       </div>
 
       <div className="absolute bottom-0 left-0 right-0 z-10 p-4 sm:p-6 md:p-8">
-        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4">
+        <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 md:gap-6">
           <Link
             href="/stream"
             className="group inline-flex items-center justify-center px-4 h-11 text-sm font-medium transition-colors bg-white/80 backdrop-blur-sm border border-black/10 rounded-full hover:bg-white text-text-primary gap-2"
           >
-            {/* <div className="relative w-[18px] h-[18px]">
-             
-            </div> */}
-            
             Start Consultation
-            <ArrowBigRight/>
+            <ArrowBigRight className="w-4 h-4" />
           </Link>
-
+          
+          <Link
+            href="/find"
+            className="group inline-flex items-center justify-center px-4 h-11 text-sm font-medium transition-colors bg-white/80 backdrop-blur-sm border border-black/10 rounded-full hover:bg-white text-text-primary gap-2"
+          >
+            Book Appointment
+            <Calendar className="w-4 h-4" />
+          </Link>
+          
+          <Link
+            href="/history"
+            className="group inline-flex items-center justify-center px-4 h-11 text-sm font-medium transition-colors bg-white/80 backdrop-blur-sm border border-black/10 rounded-full hover:bg-white text-text-primary gap-2"
+          >
+            Medical History
+            <FileText className="w-4 h-4" />
+          </Link>
+          
+          <Link
+            href="/report"
+            className="group inline-flex items-center justify-center px-4 h-11 text-sm font-medium transition-colors bg-white/80 backdrop-blur-sm border border-black/10 rounded-full hover:bg-white text-text-primary gap-2"
+          >
+            Latest Reports
+            <File className="w-4 h-4" />
+          </Link>
         </div>
       </div>
     </section>

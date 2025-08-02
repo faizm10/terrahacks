@@ -1,5 +1,7 @@
 # 🩺 MediAI – Video-Based AI Health Consultation App
 
+![alt text](image.png)
+
 **MediAI** is an AI-powered video health consultation platform that helps users identify symptoms in real-time through live video and audio analysis. By combining speech recognition, visual cues, and large language models, MediAI offers early health insights and potential diagnoses — before you even visit a doctor.
 
 ---

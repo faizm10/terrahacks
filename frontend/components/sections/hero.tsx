@@ -41,14 +41,9 @@ export default function Hero() {
             href="/stream"
             className="group inline-flex items-center justify-center px-4 h-11 text-sm font-medium transition-colors bg-white/80 backdrop-blur-sm border border-black/10 rounded-full hover:bg-white text-text-primary gap-2"
           >
-            {/* <div className="relative w-[18px] h-[18px]">
-             
-            </div> */}
-            
             Start Consultation
-            <ArrowBigRight/>
+            <ArrowBigRight />
           </Link>
-
         </div>
       </div>
     </section>

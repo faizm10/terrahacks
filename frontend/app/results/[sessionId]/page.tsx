@@ -38,7 +38,7 @@ export default function ResultsPage() {
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [isReportOpen, setIsReportOpen] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
 
   useEffect(() => {
     const fetchAnalysis = async () => {
@@ -141,5 +141,33 @@ export default function ResultsPage() {
     videoAttachmentName: analysis.videoAttachmentName
   }
 
-  return <MedicalReport report={report} />
+  return (
+    <div className="relative">
+      <MedicalReport report={report} currentPage={currentPage} />
+      
+      {/* Left Arrow - Previous Page */}
+      {currentPage > 1 && (
+        <button
+          onClick={() => setCurrentPage(currentPage - 1)}
+          className="fixed left-4 top-1/2 transform -translate-y-1/2 z-50 bg-white border border-gray-300 rounded-full w-12 h-12 flex items-center justify-center shadow-lg hover:bg-gray-50 transition-colors"
+        >
+          <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+      )}
+      
+      {/* Right Arrow - Next Page */}
+      {currentPage < 2 && (
+        <button
+          onClick={() => setCurrentPage(currentPage + 1)}
+          className="fixed right-4 top-1/2 transform -translate-y-1/2 z-50 bg-white border border-gray-300 rounded-full w-12 h-12 flex items-center justify-center shadow-lg hover:bg-gray-50 transition-colors"
+        >
+          <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      )}
+    </div>
+  )
 }

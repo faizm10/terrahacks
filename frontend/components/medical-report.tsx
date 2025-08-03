@@ -2,9 +2,11 @@
 
 import { useState, useCallback } from "react";
 import { Report, Symptom } from "@/types/report";
+import { enhanceSymptomDescription } from "@/lib/openai";
 
 interface MedicalReportProps {
   report: Report;
+  currentPage?: number;
 }
 
 // Editable input component with PDF-like styling (moved outside to prevent re-creation)
@@ -29,9 +31,9 @@ const EditableField = ({
         key={fieldKey}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={`w-full bg-blue-50 border-blue-300 focus:border-blue-500 focus:bg-blue-100 outline-none px-1 py-0.5 resize-none ${className}`}
+        className={`w-full h-full bg-blue-50 border-blue-300 focus:border-blue-500 focus:bg-blue-100 outline-none px-1 py-0.5 resize-none ${className}`}
         placeholder={placeholder}
-        rows={2}
+        rows={3}
       />
     );
   }
@@ -42,18 +44,21 @@ const EditableField = ({
       type="text"
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className={`w-full bg-blue-50 border-blue-300 focus:border-blue-500 focus:bg-blue-100 outline-none px-1 py-0.5 ${className}`}
+      className={`w-full h-full bg-blue-50 border-blue-300 focus:border-blue-500 focus:bg-blue-100 outline-none px-1 py-0.5 ${className}`}
       placeholder={placeholder}
     />
   );
 };
 
-export default function MedicalReport({ report }: MedicalReportProps) {
+export default function MedicalReport({ report, currentPage = 1 }: MedicalReportProps) {
   // State for editable fields
   const [editableReport, setEditableReport] = useState<Report>(report);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [isAiEnhancing, setIsAiEnhancing] = useState(false);
+  const [showPromptInput, setShowPromptInput] = useState(false);
+  const [userPrompt, setUserPrompt] = useState('');
   // Helper to safely get parts of the patient name
   const getPatientNamePart = (part: "first" | "last") => {
     const nameParts = editableReport.patientName.split(" ");
@@ -101,6 +106,47 @@ export default function MedicalReport({ report }: MedicalReportProps) {
     });
   }, []);
 
+  // Show prompt input
+  const handleAiEnhancementClick = () => {
+    setShowPromptInput(!showPromptInput);
+    if (!showPromptInput) {
+      setUserPrompt('');
+    }
+  };
+
+  // AI enhancement function
+  const handleAiEnhancement = async () => {
+    if (!userPrompt.trim()) return;
+    
+    setIsAiEnhancing(true);
+    setShowPromptInput(false);
+    
+    try {
+      const symptoms = editableReport.detectedSymptoms.map(s => s.name);
+      const stream = await enhanceSymptomDescription(editableReport.consultationSummary, symptoms, userPrompt);
+      
+      const reader = stream.getReader();
+      let enhancedText = '';
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        enhancedText += value;
+        // Update the field with streaming text
+        setEditableReport(prev => ({ 
+          ...prev, 
+          consultationSummary: enhancedText 
+        }));
+      }
+    } catch (error) {
+      console.error('AI enhancement failed:', error);
+    } finally {
+      setIsAiEnhancing(false);
+      setUserPrompt('');
+    }
+  };
+
   // Save function
   const handleSave = async () => {
     setIsSaving(true);
@@ -127,32 +173,37 @@ export default function MedicalReport({ report }: MedicalReportProps) {
 
   return (
     <div className="h-screen bg-gray-100 flex justify-center overflow-hidden">
-      <div className="w-full max-w-[8.5in] bg-white border border-gray-300 shadow-lg relative text-black text-[10px] font-sans my-4 mx-4 overflow-y-auto scrollbar-hide">
-        {/* Header */}
-        <div className="relative z-20 p-6 pb-0">
-          <div className="flex justify-between items-start mb-4">
-            <div className="flex flex-col items-start">
-              <h1 className="text-lg font-bold mb-2">
-                Medical Consultation Report – Patient Assessment
-              </h1>
-              <div className="flex items-center gap-2">
-                <div className="flex flex-col text-[8px] font-medium leading-tight">
-                  <span>AI-Powered Medical</span>
-                  <span>Consultation System</span>
+      <div className="w-full max-w-[8.5in] bg-white border border-gray-300 shadow-lg relative text-black text-[10px] font-sans my-4 mx-4 overflow-hidden transition-all duration-300 ease-in-out"
+           style={{transform: currentPage === 2 ? 'translateX(-10px) rotateY(-5deg)' : 'translateX(0px) rotateY(0deg)'}}>
+        {/* Header - Only show on page 1 */}
+        {currentPage === 1 && (
+          <div className="relative z-20 p-6 pb-0">
+            <div className="flex justify-between items-start mb-4">
+              <div className="flex flex-col items-start">
+                <h1 className="text-lg font-bold mb-2">
+                  Medical Consultation Report – Patient Assessment
+                </h1>
+                <div className="flex items-center gap-2">
+                  <div className="flex flex-col text-[8px] font-medium leading-tight">
+                    <span>AI-Powered Medical</span>
+                    <span>Consultation System</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <h2 className="text-xl font-extrabold text-center mb-4">
-            MEDICAL CONSULTATION REPORT
-            <br />
-            PATIENT ASSESSMENT SUMMARY
-          </h2>
-        </div>
+            <h2 className="text-xl font-extrabold text-center mb-4">
+              MEDICAL CONSULTATION REPORT
+              <br />
+              PATIENT ASSESSMENT SUMMARY
+            </h2>
+          </div>
+        )}
 
         {/* Form Sections */}
-        <div className="relative z-20 px-6 space-y-4">
+        <div className={`relative z-20 px-6 space-y-4 ${currentPage === 2 ? 'pt-6' : ''}`}>
+          {currentPage === 1 && (
+            <>
           {/* PATIENT INFORMATION */}
           <div className="border border-black">
             <div className="bg-gray-200 p-1 font-bold text-[9px] border-b border-black">
@@ -222,9 +273,9 @@ export default function MedicalReport({ report }: MedicalReportProps) {
               SYMPTOMS ASSESSMENT
             </div>
             <div className="p-2">
-              <div className="mb-2">
+              <div className="mb-4">
                 <span className="font-medium">Primary Symptoms:</span>
-                <div className="border-b border-black mt-1 min-h-[1.5rem] flex items-center px-1">
+                <div className="border-b border-black mt-2 h-[2rem] flex items-start px-1 py-1">
                   <EditableField
                     value={editableReport.detectedSymptoms.map(s => s.name).join(", ") || "No specific symptoms reported"}
                     onChange={updateSymptoms}
@@ -233,9 +284,109 @@ export default function MedicalReport({ report }: MedicalReportProps) {
                   />
                 </div>
               </div>
-              <div className="mb-2">
-                <span className="font-medium">Symptom Description:</span>
-                <div className="border-b border-black mt-1 min-h-[1.5rem] flex items-center px-1">
+              <div className="mb-4">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium">Symptom Description:</span>
+                  <button
+                    onClick={handleAiEnhancementClick}
+                    disabled={isAiEnhancing}
+                    className="text-[9px] px-1.5 py-0.5 bg-gray-200 hover:bg-gray-300 text-black rounded-sm border border-gray-400 border-t-gray-300 border-l-gray-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 shadow-sm font-mono"
+                    style={{
+                      background: 'linear-gradient(135deg, #f0f0f0 0%, #d0d0d0 100%)',
+                      borderStyle: 'solid',
+                      borderWidth: '1px',
+                      borderTopColor: '#ffffff',
+                      borderLeftColor: '#ffffff',
+                      borderRightColor: '#808080',
+                      borderBottomColor: '#808080'
+                    }}
+                  >
+                    {isAiEnhancing ? (
+                      <>
+                        <svg className="animate-spin w-2 h-2" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        ai...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        ai
+                      </>
+                    )}
+                  </button>
+                </div>
+                
+                {/* AI Prompt Input - Inline */}
+                {showPromptInput && (
+                  <div className="mt-2 mb-2 p-2 bg-gray-100 border border-gray-300 rounded-sm">
+                    <div className="flex items-center gap-1 mb-2">
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                        {/* Apple core shape */}
+                        <path d="M12 2c-2 0-3.5 1.5-3.5 3.5 0 1 0.5 2 1 2.5-1.5 0.5-2.5 2-2.5 3.5 0 3 2 6 5 8 3-2 5-5 5-8 0-1.5-1-3-2.5-3.5 0.5-0.5 1-1.5 1-2.5C15.5 3.5 14 2 12 2z"/>
+                        {/* Bite mark */}
+                        <circle cx="15" cy="8" r="1.5" fill="white"/>
+                        {/* Leaf */}
+                        <path d="M12 2c0.5-0.5 1-0.5 1.5 0s0.5 1 0 1.5c-0.5 0.5-1 0.5-1.5 0S11.5 2.5 12 2z"/>
+                      </svg>
+                      <span className="text-[9px] font-mono font-bold">AI Enhancement</span>
+                    </div>
+                    <input
+                      type="text"
+                      value={userPrompt}
+                      onChange={(e) => setUserPrompt(e.target.value)}
+                      placeholder="Enter your enhancement request..."
+                      className="w-full p-1 text-[9px] font-mono border border-gray-400 bg-white"
+                      style={{
+                        borderTopColor: '#808080',
+                        borderLeftColor: '#808080',
+                        borderRightColor: '#ffffff',
+                        borderBottomColor: '#ffffff'
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && userPrompt.trim()) {
+                          handleAiEnhancement();
+                        }
+                      }}
+                    />
+                    <div className="flex gap-1 mt-2">
+                      <button
+                        onClick={() => setShowPromptInput(false)}
+                        className="px-2 py-0.5 text-[9px] font-mono"
+                        style={{
+                          background: 'linear-gradient(135deg, #f0f0f0 0%, #d0d0d0 100%)',
+                          border: '1px solid',
+                          borderTopColor: '#ffffff',
+                          borderLeftColor: '#ffffff',
+                          borderRightColor: '#808080',
+                          borderBottomColor: '#808080'
+                        }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleAiEnhancement}
+                        disabled={!userPrompt.trim()}
+                        className="px-2 py-0.5 text-[9px] font-mono disabled:opacity-50"
+                        style={{
+                          background: userPrompt.trim() ? 'linear-gradient(135deg, #e0e0e0 0%, #c0c0c0 100%)' : 'linear-gradient(135deg, #f0f0f0 0%, #d0d0d0 100%)',
+                          border: '1px solid',
+                          borderTopColor: '#ffffff',
+                          borderLeftColor: '#ffffff',
+                          borderRightColor: '#808080',
+                          borderBottomColor: '#808080'
+                        }}
+                      >
+                        Enhance
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="border-b border-black mt-2 h-[6rem] flex items-start px-1 py-1">
                   <EditableField
                     value={editableReport.consultationSummary}
                     onChange={(value) => updateField("consultationSummary", value)}
@@ -247,7 +398,7 @@ export default function MedicalReport({ report }: MedicalReportProps) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <span className="font-medium">Onset Pattern:</span>
-                  <div className="border-b border-black mt-1 min-h-[1.5rem] flex items-center px-1">
+                  <div className="border-b border-black mt-2 h-[1.8rem] flex items-center px-1">
                     <EditableField
                       value="Gradual onset"
                       onChange={(value) => {
@@ -260,7 +411,7 @@ export default function MedicalReport({ report }: MedicalReportProps) {
                 </div>
                 <div>
                   <span className="font-medium">Triggers:</span>
-                  <div className="border-b border-black mt-1 min-h-[1.5rem] flex items-center px-1">
+                  <div className="border-b border-black mt-2 h-[1.8rem] flex items-center px-1">
                     <EditableField
                       value="Stress, environmental factors"
                       onChange={(value) => {
@@ -327,6 +478,11 @@ export default function MedicalReport({ report }: MedicalReportProps) {
             </div>
           </div>
 
+            </>
+          )}
+
+          {currentPage === 2 && (
+            <>
           {/* POTENTIAL CONSIDERATIONS */}
           <div className="border border-black">
             <div className="bg-gray-200 p-1 font-bold text-[9px] border-b border-black">
@@ -516,14 +672,19 @@ export default function MedicalReport({ report }: MedicalReportProps) {
               </div>
             </div>
           </div>
+            </>
+          )}
         </div>
 
-        {/* Footer */}
-        <div className="relative z-20 flex justify-between items-end px-6 py-4 text-[8px] mt-4 mb-24">
-          <span>AI Medical Consultation Report - {editableReport.reportId}</span>
-          <span>Generated by AI-Powered Medical System</span>
-        </div>
+        {/* Footer - Only show on page 2 */}
+        {currentPage === 2 && (
+          <div className="relative z-20 flex justify-between items-end px-6 py-4 text-[8px] mt-4 mb-24">
+            <span>AI Medical Consultation Report - {editableReport.reportId}</span>
+            <span>Generated by AI-Powered Medical System</span>
+          </div>
+        )}
       </div>
+
 
       {/* Custom Liquid Glass Floating Navigation */}
       <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">

@@ -156,6 +156,12 @@ export default function TestStreamPage() {
               <div className={`w-3 h-3 rounded-full ${isTranscriptConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
               <span className="text-sm text-text-secondary">Transcript</span>
             </div>
+            <div className="flex items-center gap-2">
+              <div className={`w-3 h-3 rounded-full ${isRecording ? 'bg-red-500 animate-pulse' : recordingBlob ? 'bg-blue-500' : 'bg-gray-400'}`}></div>
+              <span className="text-sm text-text-secondary">
+                {isRecording ? 'Recording' : recordingBlob ? 'Recorded' : 'Video'}
+              </span>
+            </div>
             <div className="text-sm text-text-secondary">
               Status: <span className={isConnected ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
                 {isConnected ? "Connected" : "Disconnected"}
@@ -272,6 +278,40 @@ export default function TestStreamPage() {
                 )}
               </button>
 
+              {/* Recording Controls */}
+              {isConnected && (
+                <>
+                  <button
+                    onClick={handleStartRecording}
+                    disabled={isRecording || isFinishing}
+                    className="flex items-center gap-2 px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <Circle className="w-4 h-4" />
+                    <span className="font-medium">Start Recording</span>
+                  </button>
+
+                  <button
+                    onClick={handleStopRecording}
+                    disabled={!isRecording || isFinishing}
+                    className="flex items-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <Square className="w-4 h-4" />
+                    <span className="font-medium">Stop Recording</span>
+                  </button>
+
+                  {recordingBlob && !isRecording && (
+                    <button
+                      onClick={handleSaveRecording}
+                      disabled={isFinishing}
+                      className="flex items-center gap-2 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span className="font-medium">Save Video</span>
+                    </button>
+                  )}
+                </>
+              )}
+
               <button
                 onClick={handleFinishConversation}
                 disabled={
@@ -306,13 +346,34 @@ export default function TestStreamPage() {
       </div>
 
       {/* Error Display */}
-      {error && (
+      {(error || recordingError) && (
         <div className="fixed bottom-4 right-4 bg-red-50 border border-red-200 rounded-lg p-4 max-w-md">
           <h3 className="text-red-800 font-semibold mb-2 flex items-center gap-2">
             <XCircle className="w-4 h-4" />
             Error
           </h3>
-          <p className="text-red-700 text-sm">{error}</p>
+          <p className="text-red-700 text-sm">{error || recordingError}</p>
+        </div>
+      )}
+
+      {/* Success Message */}
+      {savedVideoUrl && (
+        <div className="fixed bottom-4 left-4 bg-green-50 border border-green-200 rounded-lg p-4 max-w-md">
+          <h3 className="text-green-800 font-semibold mb-2 flex items-center gap-2">
+            <CheckCircle className="w-4 h-4" />
+            Video Saved
+          </h3>
+          <p className="text-green-700 text-sm">
+            Video recording has been saved to Supabase storage.
+          </p>
+          <a
+            href={savedVideoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-green-600 text-sm underline mt-2 inline-block"
+          >
+            View Video
+          </a>
         </div>
       )}
     </div>

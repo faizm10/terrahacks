@@ -5,17 +5,32 @@ import { useParams, useRouter } from "next/navigation"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Clock, MessageSquare, Stethoscope, AlertTriangle, ClipboardList, Lightbulb, CalendarDays } from "lucide-react"
+import { Clock, MessageSquare, Stethoscope, AlertTriangle, ClipboardList, Lightbulb, CalendarDays, FileText } from "lucide-react"
+import MedicalReport from "@/components/medical-report"
+import { Report, Symptom } from "@/types/report"
 
 interface AnalysisResult {
   session_id: string
   status: string
   duration_seconds: number
   transcript_count: number
-  symptoms: string[]
-  severity: string
-  potential_conditions: string[]
-  recommendations: string
+  // Report fields
+  reportId: string
+  patientName: string
+  patientId: string
+  dateOfBirth: string
+  providerName: string
+  providerSpecialty: string
+  consultationDate: string
+  consultationTime: string
+  consultationType: string
+  mainComplaint: string
+  detectedSymptoms: Symptom[]
+  consultationSummary: string
+  potentialDiagnoses: string[]
+  recommendations: string[]
+  videoAttachmentUrl: string
+  videoAttachmentName: string
 }
 
 export default function ResultsPage() {
@@ -66,6 +81,13 @@ export default function ResultsPage() {
     }
   }
 
+  const getSeverityFromSymptoms = (symptoms: Symptom[]) => {
+    const avgConfidence = symptoms.reduce((acc, s) => acc + s.confidence, 0) / symptoms.length
+    if (avgConfidence > 0.8) return "high"
+    if (avgConfidence > 0.5) return "medium"
+    return "low"
+  }
+
   const formatDuration = (seconds: number) => {
     const minutes = Math.floor(seconds / 60)
     const remainingSeconds = seconds % 60
@@ -99,140 +121,163 @@ export default function ResultsPage() {
     )
   }
 
+  const severity = getSeverityFromSymptoms(analysis.detectedSymptoms)
+  
+  const report: Report = {
+    reportId: analysis.reportId,
+    patientName: analysis.patientName,
+    patientId: analysis.patientId,
+    dateOfBirth: analysis.dateOfBirth,
+    providerName: analysis.providerName,
+    providerSpecialty: analysis.providerSpecialty,
+    consultationDate: analysis.consultationDate,
+    consultationTime: analysis.consultationTime,
+    consultationType: analysis.consultationType,
+    mainComplaint: analysis.mainComplaint,
+    detectedSymptoms: analysis.detectedSymptoms,
+    consultationSummary: analysis.consultationSummary,
+    potentialDiagnoses: analysis.potentialDiagnoses,
+    recommendations: analysis.recommendations,
+    videoAttachmentUrl: analysis.videoAttachmentUrl,
+    videoAttachmentName: analysis.videoAttachmentName
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <div className="max-w-4xl mx-auto space-y-6">
-        {/* Report Header */}
-        <Card className="p-6 shadow-md">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-              <ClipboardList className="h-8 w-8 text-blue-600" />
-              Health Consultation Report
-            </CardTitle>
-            <p className="text-gray-600 text-sm">Session ID: {analysis.session_id}</p>
-            <p className="text-gray-600 text-sm flex items-center gap-1">
-              <CalendarDays className="h-4 w-4" />
-              Date: {new Date().toLocaleDateString()}
-            </p>
-          </CardHeader>
-        </Card>
-
-        {/* Session Summary */}
-        <Card className="p-6 shadow-md">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-xl font-semibold flex items-center gap-2">
-              <Clock className="h-5 w-5 text-gray-600" />
-              Session Summary
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="bg-blue-50 border border-blue-200 p-4 flex flex-col items-center text-center">
-                <Clock className="h-8 w-8 text-blue-600 mb-2" />
-                <h3 className="font-medium text-blue-900">Duration</h3>
-                <p className="text-2xl font-bold text-blue-600">{formatDuration(analysis.duration_seconds)}</p>
-              </Card>
-              <Card className="bg-green-50 border border-green-200 p-4 flex flex-col items-center text-center">
-                <MessageSquare className="h-8 w-8 text-green-600 mb-2" />
-                <h3 className="font-medium text-green-900">Interactions</h3>
-                <p className="text-2xl font-bold text-green-600">{analysis.transcript_count}</p>
-              </Card>
-              <Card className="bg-purple-50 border border-purple-200 p-4 flex flex-col items-center text-center">
-                <Stethoscope className="h-8 w-8 text-purple-600 mb-2" />
-                <h3 className="font-medium text-purple-900">Symptoms Found</h3>
-                <p className="text-2xl font-bold text-purple-600">{analysis.symptoms.length}</p>
-              </Card>
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Left Side - Summary UI */}
+      <div className="w-1/2 overflow-y-auto bg-[#E8E2DB]">
+        <div className="min-h-full p-8 pb-24 space-y-6">
+          {/* MediCare Branding */}
+          <div className="text-center mb-12">
+            <h1 className="text-5xl font-black text-[#2C3E50] mb-2">MediCare</h1>
+            <div className="flex justify-center items-center gap-2 text-[#5B8BDF]">
+              <div className="w-8 h-8 bg-[#5B8BDF] rounded-sm flex items-center justify-center">
+                <span className="text-white text-xl font-bold">+</span>
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Symptoms Analysis */}
-        <Card className="p-6 shadow-md">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-xl font-semibold flex items-center gap-2">
-              <ClipboardList className="h-5 w-5 text-gray-600" />
-              Symptoms Identified
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="mb-4 flex items-center gap-2">
-              <span className="text-base font-medium text-gray-700">Severity Level:</span>
-              <Badge variant={getSeverityVariant(analysis.severity)}>
-                {analysis.severity.charAt(0).toUpperCase() + analysis.severity.slice(1)}
-              </Badge>
+          {/* Session Info */}
+          <div className="bg-white rounded-2xl p-6 mb-6">
+            <h2 className="text-2xl font-bold text-[#2C3E50] mb-4">Consultation Summary</h2>
+            <p className="text-[#6B7280] text-sm mb-4">Session ID: {analysis.session_id}</p>
+            
+            {/* Metrics Grid */}
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className="text-center">
+                <div className="text-3xl font-black text-[#5B8BDF]">{formatDuration(analysis.duration_seconds)}</div>
+                <p className="text-sm text-[#6B7280] mt-1">Duration</p>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-black text-[#5B8BDF]">{analysis.transcript_count}</div>
+                <p className="text-sm text-[#6B7280] mt-1">Interactions</p>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-black text-[#5B8BDF]">{analysis.detectedSymptoms.length}</div>
+                <p className="text-sm text-[#6B7280] mt-1">Symptoms</p>
+              </div>
             </div>
-            <ul className="space-y-2">
-              {analysis.symptoms.map((symptom, index) => (
-                <li key={index} className="bg-gray-50 rounded-md p-3 flex items-center gap-2 text-gray-800">
-                  <span className="text-blue-500">•</span> {symptom}
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Potential Conditions */}
-        <Card className="p-6 shadow-md">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-xl font-semibold flex items-center gap-2">
-              <Stethoscope className="h-5 w-5 text-gray-600" />
-              Potential Conditions to Investigate
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2">
-              {analysis.potential_conditions.map((condition, index) => (
-                <li
-                  key={index}
-                  className="bg-orange-50 border border-orange-200 rounded-md p-3 flex items-center gap-2 text-orange-800"
-                >
-                  <span className="text-orange-500">•</span> {condition}
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-
-        {/* Recommendations */}
-        <Card className="p-6 shadow-md">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-xl font-semibold flex items-center gap-2">
-              <Lightbulb className="h-5 w-5 text-gray-600" />
-              Recommendations
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-              <p className="text-blue-800">{analysis.recommendations}</p>
+          {/* Main Content */}
+          <div className="bg-white rounded-2xl p-6 space-y-6">
+            {/* Chief Complaint */}
+            <div>
+              <h3 className="text-xl font-bold text-[#2C3E50] mb-3">Chief Complaint</h3>
+              <p className="text-[#2C3E50] font-semibold mb-2">{analysis.mainComplaint}</p>
+              <p className="text-[#6B7280] text-sm leading-relaxed">{analysis.consultationSummary}</p>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Disclaimer */}
-        <Card className="bg-yellow-50 border border-yellow-200 p-6 shadow-md">
-          <CardHeader className="pb-2">
-            <CardTitle className="font-semibold text-yellow-800 flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-yellow-700" />
-              Important Disclaimer
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-yellow-700 text-sm">
-              This analysis is for informational purposes only and should not be considered as medical advice. Please
-              consult with a qualified healthcare professional for proper diagnosis and treatment.
-            </p>
-          </CardContent>
-        </Card>
+            {/* Symptoms */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-xl font-bold text-[#2C3E50]">Detected Symptoms</h3>
+                <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+                  severity === 'high' ? 'bg-red-100 text-red-600' :
+                  severity === 'medium' ? 'bg-yellow-100 text-yellow-600' :
+                  'bg-green-100 text-green-600'
+                }`}>
+                  {severity.toUpperCase()}
+                </span>
+              </div>
+              <div className="space-y-2">
+                {analysis.detectedSymptoms.map((symptom, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-[#F9FAFB] rounded-lg">
+                    <span className="text-[#2C3E50] font-medium">{symptom.name}</span>
+                    <span className={`text-sm font-bold ${
+                      symptom.confidence > 0.8 ? 'text-green-600' :
+                      symptom.confidence > 0.5 ? 'text-yellow-600' :
+                      'text-red-600'
+                    }`}>
+                      {(symptom.confidence * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-        {/* Actions */}
-        <div className="flex flex-wrap gap-4 justify-end">
-          <Button onClick={() => router.push("/stream")} className="px-6 py-2">
-            Start New Consultation
-          </Button>
-          <Button onClick={() => window.print()} variant="outline" className="px-6 py-2">
-            Print Report
-          </Button>
+            {/* Potential Conditions */}
+            <div>
+              <h3 className="text-xl font-bold text-[#2C3E50] mb-3">Potential Conditions</h3>
+              <div className="space-y-2">
+                {analysis.potentialDiagnoses.map((condition, index) => (
+                  <div key={index} className="p-3 bg-[#FEF3E2] rounded-lg">
+                    <span className="text-[#E97132] font-medium">• {condition}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Recommendations */}
+            <div>
+              <h3 className="text-xl font-bold text-[#2C3E50] mb-3">Recommendations</h3>
+              <div className="space-y-2">
+                {analysis.recommendations.map((rec, index) => (
+                  <div key={index} className="p-3 bg-[#E8F3FF] rounded-lg">
+                    <span className="text-[#5B8BDF] font-medium">{index + 1}. {rec}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Actions - Bottom Navigation Style */}
+          <div className="fixed bottom-0 left-0 w-1/2 bg-white border-t border-gray-200 p-4">
+            <div className="flex gap-4 max-w-2xl mx-auto">
+              <button 
+                onClick={() => router.push("/stream")} 
+                className="flex-1 flex flex-col items-center py-3 text-[#5B8BDF] hover:bg-[#F9FAFB] rounded-lg transition-colors"
+              >
+                <MessageSquare className="w-6 h-6 mb-1" />
+                <span className="text-sm font-semibold">Start Consultation</span>
+              </button>
+              <button 
+                onClick={() => window.print()} 
+                className="flex-1 flex flex-col items-center py-3 text-[#5B8BDF] hover:bg-[#F9FAFB] rounded-lg transition-colors"
+              >
+                <FileText className="w-6 h-6 mb-1" />
+                <span className="text-sm font-semibold">Print Report</span>
+              </button>
+              <button 
+                className="flex-1 flex flex-col items-center py-3 text-[#5B8BDF] hover:bg-[#F9FAFB] rounded-lg transition-colors"
+              >
+                <CalendarDays className="w-6 h-6 mb-1" />
+                <span className="text-sm font-semibold">Book Appointment</span>
+              </button>
+              <button 
+                className="flex-1 flex flex-col items-center py-3 text-[#5B8BDF] hover:bg-[#F9FAFB] rounded-lg transition-colors"
+              >
+                <ClipboardList className="w-6 h-6 mb-1" />
+                <span className="text-sm font-semibold">Medical History</span>
+              </button>
+            </div>
+          </div>
         </div>
+      </div>
+
+      {/* Right Side - Full Medical Report */}
+      <div className="w-1/2 overflow-y-auto bg-gray-100">
+        <MedicalReport report={report} />
       </div>
     </div>
   )

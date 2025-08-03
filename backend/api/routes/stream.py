@@ -13,6 +13,7 @@ import json
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from services.conversation_store import conversation_store
 from api.types.medical_types import FinishConversationResponse
+from config.prompts import MEDICAL_ANALYSIS_PROMPT, MEDICAL_ANALYSIS_SYSTEM_PROMPT
 
 logger = logging.getLogger(__name__)
 
@@ -264,37 +265,30 @@ async def finish_conversation(session_id: str = "default") -> FinishConversation
         
         client = openai.OpenAI(api_key=openai_api_key)
         
-        analysis_prompt = f"""
-You are a medical AI assistant. Analyze this patient conversation and provide a structured assessment.
-
-Conversation:
-{conversation_text}
-
-Please provide your analysis in the following JSON format:
-{{
-    "symptoms": ["list of symptoms mentioned"],
-    "severity": "low/medium/high",
-    "potential_conditions": ["possible conditions to investigate"],
-    "recommendations": "brief recommendations for next steps"
-}}
-
-Focus on:
-- Extracting clear symptoms mentioned by the patient
-- Assessing overall severity based on symptoms described
-- Suggesting potential conditions that warrant investigation
-- Providing actionable next steps
-
-Be conservative and always recommend consulting a healthcare professional for serious concerns.
-"""
+        # Generate timestamps for the report
+        now = datetime.now()
+        timestamp = now.strftime("%Y%m%d-%H%M%S")
+        timestamp_short = now.strftime("%Y%m%d%H%M")
+        date = now.strftime("%Y-%m-%d")
+        time = now.strftime("%I:%M %p %Z")
+        
+        # Format the prompt with conversation and timestamps
+        analysis_prompt = MEDICAL_ANALYSIS_PROMPT.format(
+            conversation_text=conversation_text,
+            timestamp=timestamp,
+            timestamp_short=timestamp_short,
+            date=date,
+            time=time
+        )
 
         response = client.chat.completions.create(
             model="gpt-4",
             messages=[
-                {"role": "system", "content": "You are a medical AI assistant providing preliminary symptom analysis."},
+                {"role": "system", "content": MEDICAL_ANALYSIS_SYSTEM_PROMPT},
                 {"role": "user", "content": analysis_prompt}
             ],
             temperature=0.3,
-            max_tokens=1000
+            max_tokens=2000
         )
         
         # Step 4: Parse LLM response
@@ -303,14 +297,31 @@ Be conservative and always recommend consulting a healthcare professional for se
             if content is None:
                 raise ValueError("Empty response from LLM")
             analysis_result = json.loads(content)
-        except (json.JSONDecodeError, ValueError):
-            logger.error("Failed to parse LLM response as JSON")
-            # Fallback analysis
+        except (json.JSONDecodeError, ValueError) as e:
+            logger.error(f"Failed to parse LLM response as JSON: {e}")
+            # Fallback analysis with full report structure
             analysis_result = {
-                "symptoms": ["Analysis unavailable"],
-                "severity": "unknown",
-                "potential_conditions": ["Requires manual review"],
-                "recommendations": "Please consult with a healthcare professional for proper evaluation."
+                "reportId": f"MEDIREP-{timestamp}",
+                "patientName": "Patient Name",
+                "patientId": f"P{timestamp_short}",
+                "dateOfBirth": "Not Provided",
+                "providerName": "AI Medical Assistant",
+                "providerSpecialty": "General Practice AI",
+                "consultationDate": date,
+                "consultationTime": time,
+                "consultationType": "AI Voice Consultation",
+                "mainComplaint": "Analysis unavailable",
+                "detectedSymptoms": [{
+                    "name": "Analysis unavailable",
+                    "confidence": 0.0,
+                    "timestamp": "",
+                    "labelColor": "red"
+                }],
+                "consultationSummary": "Failed to analyze conversation. Please consult with a healthcare professional for proper evaluation.",
+                "potentialDiagnoses": ["Requires manual review"],
+                "recommendations": ["Please consult with a healthcare professional for proper evaluation."],
+                "videoAttachmentUrl": "",
+                "videoAttachmentName": f"Consultation_{timestamp}.mp4"
             }
         
         # Step 5: Calculate session metrics
@@ -321,16 +332,15 @@ Be conservative and always recommend consulting a healthcare professional for se
             duration_seconds = (end - start).total_seconds()
         
         # Step 6: Store analysis results before cleanup
-        conversation_store.store_analysis(session_id, {
+        # Merge analysis result with session metadata
+        full_report = {
+            **analysis_result,
             "session_id": session_id,
             "status": "analyzed",
             "duration_seconds": duration_seconds,
-            "transcript_count": len(transcripts),
-            "symptoms": analysis_result.get("symptoms", []),
-            "severity": analysis_result.get("severity", "unknown"),
-            "potential_conditions": analysis_result.get("potential_conditions", []),
-            "recommendations": analysis_result.get("recommendations", "Consult a healthcare professional.")
-        })
+            "transcript_count": len(transcripts)
+        }
+        conversation_store.store_analysis(session_id, full_report)
         
         # Step 7: Cleanup session (same as disconnect)
         cleanup_tasks = []
@@ -342,17 +352,48 @@ Be conservative and always recommend consulting a healthcare professional for se
         cleanup_tasks.append("conversation")
         
         logger.info(f"✅ Conversation analysis completed for session: {session_id}")
-        logger.info(f"📊 Found {len(analysis_result.get('symptoms', []))} symptoms, severity: {analysis_result.get('severity', 'unknown')}")
+        logger.info(f"📊 Found {len(analysis_result.get('detectedSymptoms', []))} symptoms")
+        
+        # Import Symptom type for proper conversion
+        from api.types.medical_types import Symptom
+        
+        # Convert detected symptoms to proper format
+        detected_symptoms = []
+        for symptom in analysis_result.get("detectedSymptoms", []):
+            if isinstance(symptom, dict):
+                detected_symptoms.append(Symptom(**symptom))
+            else:
+                # Fallback for string symptoms
+                detected_symptoms.append(Symptom(
+                    name=str(symptom),
+                    confidence=0.5,
+                    timestamp="",
+                    labelColor="yellow"
+                ))
         
         return FinishConversationResponse(
+            # Session metadata
             session_id=session_id,
             status="analyzed",
             duration_seconds=duration_seconds,
             transcript_count=len(transcripts),
-            symptoms=analysis_result.get("symptoms", []),
-            severity=analysis_result.get("severity", "unknown"),
-            potential_conditions=analysis_result.get("potential_conditions", []),
-            recommendations=analysis_result.get("recommendations", "Consult a healthcare professional.")
+            # Report data
+            reportId=analysis_result.get("reportId", f"MEDIREP-{timestamp}"),
+            patientName=analysis_result.get("patientName", "Patient Name"),
+            patientId=analysis_result.get("patientId", f"P{timestamp_short}"),
+            dateOfBirth=analysis_result.get("dateOfBirth", "Not Provided"),
+            providerName=analysis_result.get("providerName", "AI Medical Assistant"),
+            providerSpecialty=analysis_result.get("providerSpecialty", "General Practice AI"),
+            consultationDate=analysis_result.get("consultationDate", date),
+            consultationTime=analysis_result.get("consultationTime", time),
+            consultationType=analysis_result.get("consultationType", "AI Voice Consultation"),
+            mainComplaint=analysis_result.get("mainComplaint", ""),
+            detectedSymptoms=detected_symptoms,
+            consultationSummary=analysis_result.get("consultationSummary", ""),
+            potentialDiagnoses=analysis_result.get("potentialDiagnoses", []),
+            recommendations=analysis_result.get("recommendations", []),
+            videoAttachmentUrl=analysis_result.get("videoAttachmentUrl", ""),
+            videoAttachmentName=analysis_result.get("videoAttachmentName", f"Consultation_{timestamp}.mp4")
         )
         
     except Exception as e:

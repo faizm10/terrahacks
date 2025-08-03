@@ -3,9 +3,7 @@
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Clock, MessageSquare, Stethoscope, AlertTriangle, ClipboardList, Lightbulb, CalendarDays, FileText, ChevronLeft, ChevronRight } from "lucide-react"
 import MedicalReport from "@/components/medical-report"
 import { Report, Symptom } from "@/types/report"
 

@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MediCare",
-  description: "TerraHacks 2025 - MediCare",
+  title: "CareLens",
+  description: "TerraHacks 2025 - CareLens",
 };
 
 export default function RootLayout({

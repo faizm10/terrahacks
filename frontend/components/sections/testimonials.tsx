@@ -6,11 +6,11 @@ import React from "react";
 const testimonials: { quote: React.ReactNode }[] = [
   {
     quote:
-      "My MediCare assistant helps me with patient care, allowing me to focus more on my patients.",
+      "My CareLens assistant helps me with patient care, allowing me to focus more on my patients.",
   },
   {
     quote:
-      "I can't stop using my MediCare assistant. It has completely streamlined my administrative workflow.",
+      "I can't stop using my CareLens assistant. It has completely streamlined my administrative workflow.",
   },
   {
     quote:
@@ -19,7 +19,7 @@ const testimonials: { quote: React.ReactNode }[] = [
   {
     quote: (
       <>
-        It always feels like my MediCare assistant <em>gets</em> exactly what I
+        It always feels like my CareLens assistant <em>gets</em> exactly what I
         need for my practice.
       </>
     ),

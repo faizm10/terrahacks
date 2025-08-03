@@ -59,6 +59,8 @@ export default function MedicalReport({ report, currentPage = 1 }: MedicalReport
   const [isAiEnhancing, setIsAiEnhancing] = useState(false);
   const [showPromptInput, setShowPromptInput] = useState(false);
   const [userPrompt, setUserPrompt] = useState('');
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [showZoomControl, setShowZoomControl] = useState(false);
   // Helper to safely get parts of the patient name
   const getPatientNamePart = (part: "first" | "last") => {
     const nameParts = editableReport.patientName.split(" ");

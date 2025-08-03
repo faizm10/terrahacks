@@ -8,6 +8,7 @@ interface UseWebRTCReturn {
   error: string | null;
   connect: () => Promise<void>;
   disconnect: () => void;
+  setMicrophoneEnabled: (enabled: boolean) => void;
 }
 
 export const useWebRTC = (): UseWebRTCReturn => {
@@ -184,11 +185,22 @@ export const useWebRTC = (): UseWebRTCReturn => {
     console.log('✅ WebRTC disconnected');
   }, [cleanup]);
 
+  const setMicrophoneEnabled = useCallback((enabled: boolean) => {
+    if (localStream) {
+      const audioTracks = localStream.getAudioTracks();
+      audioTracks.forEach(track => {
+        track.enabled = enabled;
+      });
+      console.log(`🎤 Microphone ${enabled ? 'enabled' : 'disabled'}`);
+    }
+  }, [localStream]);
+
   return {
     isConnected,
     localStream,
     error,
     connect,
     disconnect,
+    setMicrophoneEnabled,
   };
 };

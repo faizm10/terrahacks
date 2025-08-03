@@ -38,7 +38,8 @@ export default function Hero() {
       </div>
 
       <div className="relative z-10 flex flex-col items-center justify-center h-full text-center px-4">
-        <h1 className="font-bold text-text-primary leading-[0.8] -tracking-[0.05em] text-[clamp(4.5rem,20vw,15rem)] opacity-85">
+        <h1 className="font-bold text-text-primary leading-[0.8] -tracking-[0.05em] text-[clamp(4.5rem,20vw,15rem)] opacity-95">
+
           MediCare
         </h1>
       </div>

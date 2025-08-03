@@ -83,4 +83,51 @@
       padding-right: 48px;
     }
   }
+
+  /* Hide scrollbars but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Safari and Chrome */
+  }
+
+  /* Simplified Clean Navigation */
+  .liquid-glass {
+    position: relative;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 40px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Simple button interactions */
+  .liquid-glass button {
+    transition: all 0.2s ease;
+    border-radius: 12px;
+    position: relative;
+    background: transparent;
+    border: none;
+  }
+
+  .liquid-glass button:hover {
+    background: #f3f4f6;
+    transform: translateY(-1px);
+  }
+
+  .liquid-glass button:active {
+    transform: translateY(0);
+    background: #e5e7eb;
+  }
+
+  .liquid-glass button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .liquid-glass button:disabled:hover {
+    transform: none;
+    background: transparent;
+  }
 }

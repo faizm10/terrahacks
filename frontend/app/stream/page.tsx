@@ -4,13 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useWebRTC } from "../../hooks/useWebRTC";
 import { useTranscript } from "../../hooks/useTranscript";
-import { Mic, Video, MessageSquare, Zap, CheckCircle, XCircle, Loader2, Brain, Activity, Shield } from "lucide-react";
+import { useVideoRecording } from "../../hooks/useVideoRecording";
+import { Mic, Video, MessageSquare, Zap, CheckCircle, XCircle, Loader2, Brain, Activity, Shield, Circle, Square, Download } from "lucide-react";
 
 export default function TestStreamPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const transcriptEndRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const [isFinishing, setIsFinishing] = useState(false);
+  const [savedVideoUrl, setSavedVideoUrl] = useState<string | null>(null);
 
   const { isConnected, localStream, error, connect, disconnect } = useWebRTC();
 
@@ -20,6 +22,17 @@ export default function TestStreamPage() {
     connect: connectTranscript,
     disconnect: disconnectTranscript,
   } = useTranscript();
+
+  const {
+    isRecording,
+    recordingBlob,
+    recordingUrl,
+    error: recordingError,
+    startRecording,
+    stopRecording,
+    saveToSupabase,
+    clearRecording,
+  } = useVideoRecording();
 
   // Set video source when stream becomes available
   useEffect(() => {
@@ -41,14 +54,52 @@ export default function TestStreamPage() {
   }, [isConnected, isTranscriptConnected, connectTranscript]);
 
   const handleDisconnect = () => {
+    // Stop recording if active
+    if (isRecording) {
+      stopRecording();
+    }
     disconnectTranscript();
     disconnect();
+  };
+
+  const handleStartRecording = async () => {
+    if (localStream) {
+      await startRecording(localStream);
+    }
+  };
+
+  const handleStopRecording = async () => {
+    await stopRecording();
+  };
+
+  const handleSaveRecording = async () => {
+    if (recordingBlob) {
+      const videoUrl = await saveToSupabase("default");
+      if (videoUrl) {
+        setSavedVideoUrl(videoUrl);
+        console.log("✅ Video saved to Supabase:", videoUrl);
+      }
+    }
   };
 
   const handleFinishConversation = async () => {
     try {
       setIsFinishing(true);
       console.log("🏁 Finishing conversation...");
+
+      // Stop recording if active
+      if (isRecording) {
+        await stopRecording();
+      }
+
+      // Save video recording if available
+      if (recordingBlob) {
+        console.log("💾 Saving video recording...");
+        const videoUrl = await saveToSupabase("default");
+        if (videoUrl) {
+          setSavedVideoUrl(videoUrl);
+        }
+      }
 
       // Call the finish endpoint
       const response = await fetch(

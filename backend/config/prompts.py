@@ -3,6 +3,9 @@
 MEDICAL_ANALYSIS_PROMPT = """
 You are a medical AI assistant. Analyze this patient conversation and provide a structured assessment.
 
+Patient Profile:
+{profile_context}
+
 Conversation:
 {conversation_text}
 
@@ -34,19 +37,25 @@ Please provide your analysis in the following JSON format:
 }}
 
 Guidelines:
-- Extract patient name and DOB from conversation if mentioned
+- Extract patient name and DOB from conversation if mentioned, or use the profile information
+- Consider the patient's medical history, allergies, and current medications when analyzing symptoms
+- Pay special attention to family history and previous conditions that may be relevant
 - Assign confidence scores: >0.8 = green, 0.5-0.8 = yellow, <0.5 = red
-- Provide specific, actionable recommendations
+- Provide specific, actionable recommendations tailored to the patient's medical background
 - Be conservative and always recommend consulting a healthcare professional for serious concerns
 - Include timestamps if the patient mentions when symptoms started
 - Summarize the entire consultation comprehensively
 - List symptoms in order of severity/importance
+- Consider drug interactions with current medications
+- Note any contraindications based on allergies or medical history
 
 Focus on:
 - Extracting clear symptoms mentioned by the patient
-- Assessing overall severity based on symptoms described
-- Suggesting potential conditions that warrant investigation
-- Providing actionable next steps
+- Assessing overall severity based on symptoms described AND medical history
+- Suggesting potential conditions that warrant investigation, considering patient's background
+- Providing actionable next steps that account for existing conditions and medications
+- Highlighting any concerning patterns related to family history
+- Recommending appropriate specialists based on the patient's medical profile
 """
 
 MEDICAL_ANALYSIS_SYSTEM_PROMPT = """You are a medical AI assistant providing preliminary symptom analysis. Your role is to:

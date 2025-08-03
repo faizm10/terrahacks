@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from api.routes import openai, stream, realtime
+from api.routes import profile_memory as profile
 import uvicorn
 import logging
 
@@ -29,6 +30,7 @@ app.add_middleware(
 app.include_router(openai.router, prefix="/api/openai", tags=["OpenAI"])
 app.include_router(stream.router, prefix="/api/stream", tags=["Streaming"])
 app.include_router(realtime.router, prefix="/api/realtime", tags=["Realtime"])
+app.include_router(profile.router, prefix="/api/profile", tags=["Profile"])
 
 @app.get("/")
 def read_root():

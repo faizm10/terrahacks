@@ -12,7 +12,7 @@ import json
 # Add parent directory to path to import services
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from services.conversation_store import conversation_store
-from api.types.medical_types import FinishConversationResponse
+from api.types.medical_types import FinishConversationResponse, FinishConversationRequest
 from config.prompts import MEDICAL_ANALYSIS_PROMPT, MEDICAL_ANALYSIS_SYSTEM_PROMPT
 
 logger = logging.getLogger(__name__)
@@ -235,12 +235,50 @@ async def disconnect_session(session_id: str = "default"):
     }
 
 @router.post("/finish/{session_id}")
-async def finish_conversation(session_id: str = "default") -> FinishConversationResponse:
+async def finish_conversation(session_id: str = "default", request: FinishConversationRequest = None) -> FinishConversationResponse:
     """Finish conversation, analyze transcript with LLM, and return results"""
     try:
         logger.info(f"🏁 Finishing conversation for session: {session_id}")
         
-        # Step 1: Get conversation data before cleanup
+        # Step 1: Get user profile if user_id is provided
+        user_profile = None
+        profile_context = "No patient profile information available."
+        
+        if request and request.user_id:
+            try:
+                logger.info(f"🔍 Retrieving user profile: {request.user_id}")
+                
+                # Import the in-memory profiles store
+                from api.routes.profile_memory import profiles_store
+                
+                if request.user_id in profiles_store:
+                    user_profile = profiles_store[request.user_id]
+                    
+                    # Build profile context for LLM
+                    profile_context = f"""
+Patient Information:
+- Name: {user_profile.get('name', 'Unknown')}
+- Age: {user_profile.get('age', 'Not provided')}
+- Gender: {user_profile.get('gender', 'Not provided')}
+- Date of Birth: {user_profile.get('date_of_birth', 'Not provided')}
+
+Medical History:
+- Medical Conditions: {', '.join(user_profile.get('medical_history', {}).get('conditions', [])) or 'None reported'}
+- Allergies: {', '.join(user_profile.get('medical_history', {}).get('allergies', [])) or 'None reported'}
+- Current Medications: {', '.join(user_profile.get('medical_history', {}).get('medications', [])) or 'None reported'}
+- Family History: {', '.join(user_profile.get('medical_history', {}).get('family_history', [])) or 'None reported'}
+- Previous Surgeries: {', '.join(user_profile.get('medical_history', {}).get('surgeries', [])) or 'None reported'}
+- Additional Notes: {user_profile.get('medical_history', {}).get('notes', 'None')}
+"""
+                    
+                    logger.info(f"✅ User profile retrieved for analysis")
+                else:
+                    logger.warning(f"⚠️ User profile not found: {request.user_id}")
+                    
+            except Exception as e:
+                logger.warning(f"⚠️ Error retrieving user profile: {e}, proceeding without profile")
+        
+        # Step 2: Get conversation data before cleanup
         conversation = conversation_store.get_conversation(session_id)
         if not conversation:
             raise HTTPException(status_code=404, detail="Session not found")
@@ -272,8 +310,9 @@ async def finish_conversation(session_id: str = "default") -> FinishConversation
         date = now.strftime("%Y-%m-%d")
         time = now.strftime("%I:%M %p %Z")
         
-        # Format the prompt with conversation and timestamps
+        # Format the prompt with conversation, profile context, and timestamps
         analysis_prompt = MEDICAL_ANALYSIS_PROMPT.format(
+            profile_context=profile_context,
             conversation_text=conversation_text,
             timestamp=timestamp,
             timestamp_short=timestamp_short,
@@ -300,11 +339,14 @@ async def finish_conversation(session_id: str = "default") -> FinishConversation
         except (json.JSONDecodeError, ValueError) as e:
             logger.error(f"Failed to parse LLM response as JSON: {e}")
             # Fallback analysis with full report structure
+            patient_name = user_profile.get('name', 'Patient Name') if user_profile else "Patient Name"
+            patient_dob = user_profile.get('date_of_birth', 'Not Provided') if user_profile else "Not Provided"
+            
             analysis_result = {
                 "reportId": f"MEDIREP-{timestamp}",
-                "patientName": "Patient Name",
+                "patientName": patient_name,
                 "patientId": f"P{timestamp_short}",
-                "dateOfBirth": "Not Provided",
+                "dateOfBirth": patient_dob,
                 "providerName": "AI Medical Assistant",
                 "providerSpecialty": "General Practice AI",
                 "consultationDate": date,

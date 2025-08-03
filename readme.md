@@ -1,14 +1,14 @@
-# 🩺 MediAI – Video-Based AI Health Consultation App
+# 🩺 CareLens – Video-Based AI Health Consultation App
 
 ![alt text](terraLanding.png)
 
-**MediAI** is an AI-powered video health consultation platform that helps users identify symptoms in real-time through live video and audio analysis. By combining speech recognition, visual cues, and large language models, MediAI offers early health insights and potential diagnoses — before you even visit a doctor.
+**CareLens** is an AI-powered video health consultation platform that helps users identify symptoms in real-time through live video and audio analysis. By combining speech recognition, visual cues, and large language models, CareLens offers early health insights and potential diagnoses — before you even visit a doctor.
 
 ---
 
 ## 🚀 Project Overview
 
-MediAI is built to simulate a virtual consultation using real-time video + audio. It captures and analyzes user speech and facial/body visuals, extracting symptoms and offering basic health assessments powered by AI.
+CareLens is built to simulate a virtual consultation using real-time video + audio. It captures and analyzes user speech and facial/body visuals, extracting symptoms and offering basic health assessments powered by AI.
 
 This project is being developed in **three major phases**:
 

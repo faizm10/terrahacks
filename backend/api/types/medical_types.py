@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Optional
 from pydantic import BaseModel
+from datetime import datetime
 
 
 @dataclass
@@ -24,6 +25,46 @@ class Symptom(BaseModel):
     confidence: float  # 0.0 to 1.0
     timestamp: Optional[str] = ""  # e.g., "00:15"
     labelColor: Optional[str] = "green"  # "green" | "yellow" | "red"
+
+
+class MedicalHistory(BaseModel):
+    conditions: List[str] = []
+    allergies: List[str] = []
+    medications: List[str] = []
+    family_history: List[str] = []
+    surgeries: List[str] = []
+    notes: Optional[str] = ""
+
+
+class UserProfile(BaseModel):
+    user_id: str
+    name: str
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    medical_history: MedicalHistory
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+
+class CreateUserProfileRequest(BaseModel):
+    name: str
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    medical_history: MedicalHistory
+
+
+class UpdateUserProfileRequest(BaseModel):
+    name: Optional[str] = None
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    medical_history: Optional[MedicalHistory] = None
+
+
+class FinishConversationRequest(BaseModel):
+    user_id: Optional[str] = None
 
 
 class FinishConversationResponse(BaseModel):

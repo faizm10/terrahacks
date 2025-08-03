@@ -1,4 +1,4 @@
-import { ArrowBigRight, Check, Calendar, FileText, Phone, File } from "lucide-react";
+import { ArrowBigRight, Check, Calendar, FileText, Phone, File, User } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -46,6 +46,14 @@ export default function Hero() {
 
       <div className="absolute bottom-0 left-0 right-0 z-10 p-4 sm:p-6 md:p-8">
         <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 md:gap-6">
+          <Link
+            href="/profile"
+            className="group inline-flex items-center justify-center px-4 h-11 text-sm font-medium transition-colors bg-blue-500/90 backdrop-blur-sm border border-blue-600/20 rounded-full hover:bg-blue-600 text-white gap-2"
+          >
+            Setup Profile
+            <User className="w-4 h-4" />
+          </Link>
+          
           <Link
             href="/stream"
             className="group inline-flex items-center justify-center px-4 h-11 text-sm font-medium transition-colors bg-white/80 backdrop-blur-sm border border-black/10 rounded-full hover:bg-white text-text-primary gap-2"

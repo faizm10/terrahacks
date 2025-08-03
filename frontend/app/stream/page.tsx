@@ -69,12 +69,20 @@ export default function TestStreamPage() {
       setIsFinishing(true);
       console.log("🏁 Finishing conversation...");
 
-      // Call the finish endpoint
+      // Get user ID from localStorage, or set demo user ID
+      let userId = localStorage.getItem('user_id')
+      if (!userId) {
+        userId = "demo-user-12345"
+        localStorage.setItem('user_id', userId)
+      };
+      
+      // Call the finish endpoint with user_id if available
       const response = await fetch(
         "http://localhost:8000/api/stream/finish/default",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(userId ? { user_id: userId } : {}),
         }
       );
 

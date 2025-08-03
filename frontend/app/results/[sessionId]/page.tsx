@@ -158,7 +158,7 @@ export default function ResultsPage() {
       )}
       
       {/* Right Arrow - Next Page */}
-      {currentPage < 2 && (
+      {currentPage < 3 && (
         <button
           onClick={() => setCurrentPage(currentPage + 1)}
           className="fixed right-4 top-1/2 transform -translate-y-1/2 z-50 bg-white border border-gray-300 rounded-full w-12 h-12 flex items-center justify-center shadow-lg hover:bg-gray-50 transition-colors"

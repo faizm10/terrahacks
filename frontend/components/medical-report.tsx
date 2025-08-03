@@ -175,8 +175,55 @@ export default function MedicalReport({ report, currentPage = 1 }: MedicalReport
 
   return (
     <div className="h-screen bg-gray-100 flex justify-center overflow-hidden">
-      <div className="w-full max-w-[8.5in] bg-white border border-gray-300 shadow-lg relative text-black text-[10px] font-sans my-4 mx-4 overflow-hidden transition-all duration-300 ease-in-out"
-           style={{transform: currentPage === 2 ? 'translateX(-10px) rotateY(-5deg)' : 'translateX(0px) rotateY(0deg)'}}>
+      {/* Zoom Control */}
+      <div className="fixed top-4 right-4 z-50">
+        <button
+          onClick={() => setShowZoomControl(!showZoomControl)}
+          className="w-8 h-8 bg-white border border-gray-300 rounded-lg flex items-center justify-center shadow-sm hover:bg-gray-50 transition-colors"
+        >
+          <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="21 21l-4.35-4.35"></path>
+            <line x1="11" y1="8" x2="11" y2="14"></line>
+            <line x1="8" y1="11" x2="14" y2="11"></line>
+          </svg>
+        </button>
+        
+        {showZoomControl && (
+          <div className="absolute top-full right-0 mt-1 p-2 bg-white border border-gray-200 rounded-lg shadow-lg">
+            <div className="flex flex-col gap-1 min-w-[120px]">
+              <button
+                onClick={() => setZoomLevel(prev => Math.min(prev + 0.1, 2))}
+                className="px-2 py-1 text-xs bg-white border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+              >
+                Zoom In (+)
+              </button>
+              <div className="text-center text-xs font-medium py-1 text-gray-600">
+                {Math.round(zoomLevel * 100)}%
+              </div>
+              <button
+                onClick={() => setZoomLevel(prev => Math.max(prev - 0.1, 0.5))}
+                className="px-2 py-1 text-xs bg-white border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+              >
+                Zoom Out (-)
+              </button>
+              <button
+                onClick={() => setZoomLevel(1)}
+                className="px-2 py-1 text-xs bg-white border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+              >
+                Reset (100%)
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div 
+        className="w-full max-w-[8.5in] bg-white border border-gray-300 shadow-lg relative text-black text-[10px] font-mono my-4 mx-4 overflow-hidden transition-all duration-300 ease-in-out"
+        style={{
+          transform: `${currentPage === 2 ? 'translateX(-10px) rotateY(-5deg)' : 'translateX(0px) rotateY(0deg)'} scale(${zoomLevel})`,
+          transformOrigin: 'center top'
+        }}>
         {/* Header - Only show on page 1 */}
         {currentPage === 1 && (
           <div className="relative z-20 p-6 pb-0">
@@ -551,77 +598,6 @@ export default function MedicalReport({ report, currentPage = 1 }: MedicalReport
             </div>
           </div>
 
-          {/* ATTACHMENTS */}
-          <div className="border border-black">
-            <div className="bg-gray-200 p-1 font-bold text-[9px] border-b border-black">
-              ATTACHMENTS
-            </div>
-            <div className="p-2">
-              <div className="mb-2">
-                <span className="font-medium">Chat History:</span>
-                <div className="border-b border-black mt-1 min-h-[1.5rem] flex items-center px-1">
-                  <EditableField
-                    value="Patient-AI conversation transcript available (45 exchanges, 12 min duration)"
-                    onChange={(value) => {
-                      console.log('Chat history updated:', value);
-                    }}
-                    placeholder="Chat history details"
-                  />
-                </div>
-              </div>
-              <div className="mb-2">
-                <span className="font-medium">Patient's Medical History:</span>
-                <div className="border-b border-black mt-1 min-h-[1.5rem] flex items-center px-1">
-                  <EditableField
-                    value="Previous consultations: 3 records, Last visit: 2024-01-15, Chronic conditions: None reported"
-                    onChange={(value) => {
-                      console.log('Patient history updated:', value);
-                    }}
-                    placeholder="Patient medical history"
-                    multiline
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <span className="font-medium">Video Recording:</span>
-                  <div className="border-b border-black mt-1 min-h-[1.5rem] flex items-center px-1">
-                    <EditableField
-                      value="consultation_20241203_1445.mp4 (720p, 12:34 duration)"
-                      onChange={(value) => {
-                        console.log('Video recording updated:', value);
-                      }}
-                      placeholder="Video file details"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <span className="font-medium">Audio Recording:</span>
-                  <div className="border-b border-black mt-1 min-h-[1.5rem] flex items-center px-1">
-                    <EditableField
-                      value="consultation_20241203_1445.wav (16kHz, 12:34 duration)"
-                      onChange={(value) => {
-                        console.log('Audio recording updated:', value);
-                      }}
-                      placeholder="Audio file details"
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="mt-2">
-                <span className="font-medium">Additional Files:</span>
-                <div className="border-b border-black mt-1 min-h-[1.5rem] flex items-center px-1">
-                  <EditableField
-                    value="Lab results: pending, Imaging: none, Referral documents: none"
-                    onChange={(value) => {
-                      console.log('Additional files updated:', value);
-                    }}
-                    placeholder="Additional attachments"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
 
           {/* AI PHYSICIAN DECLARATION */}
           <div className="border border-black">

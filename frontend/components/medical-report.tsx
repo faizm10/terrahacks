@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { Report, Symptom } from "@/types/report";
 import { enhanceSymptomDescription } from "@/lib/openai";
+import Image from "next/image";
 
 interface MedicalReportProps {
   report: Report;
@@ -652,6 +653,22 @@ export default function MedicalReport({ report, currentPage = 1 }: MedicalReport
           </div>
             </>
           )}
+          {
+            currentPage === 3 && (
+              <div className="border border-black">
+            <div className="bg-gray-200 p-1 font-bold text-[9px] border-b border-black">
+              VIDEO ANALYSIS
+            </div>
+            <Image
+              src="/placeholder.png"
+              alt="Video Analysis Placeholder"
+              className="w-full h-auto object-cover mt-2"
+              width={800}
+              height={450}
+            />
+          </div>
+            )
+          }
         </div>
 
         {/* Footer - Only show on page 2 */}
